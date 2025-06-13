@@ -1,0 +1,88 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "deployment-server"
+dynamic = ["version"]
+description = ''
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Murat Gözel", email = "murat@gozel.com.tr" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "dotenv",
+  "fastapi[standard]",
+  "pydantic",
+  "psycopg2-binary",
+  "sqlalchemy[asyncio]",
+  "asyncpg",
+  "postmarker",
+  "celery[librabbitmq]",
+  "nanoid",
+  "GitPython",
+  "Jinja2"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-cov",
+  "pre-commit"
+]
+
+[project.urls]
+Documentation = "https://github.com/muratgozel/deployment-server#readme"
+Issues = "https://github.com/muratgozel/deployment-server/issues"
+Source = "https://github.com/muratgozel/deployment-server"
+
+[tool.hatch.version]
+source = "vcs"
+raw-options = { local_scheme = "no-local-version" }
+
+[tool.hatch.envs.dev]
+features = [
+  "dev",
+]
+
+[tool.hatch.envs.dev.scripts]
+test = "pytest {args}"
+test-cov = "pytest --cov-report=term-missing --cov={args}"
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/deployment_server tests}"
+
+[tool.coverage.run]
+source_pkgs = ["deployment_server", "tests"]
+branch = true
+parallel = true
+omit = []
+
+[tool.coverage.paths]
+deployment_server = ["src/deployment_server", "*/deployment-server/src/deployment_server"]
+tests = ["tests", "*/deployment-server/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
