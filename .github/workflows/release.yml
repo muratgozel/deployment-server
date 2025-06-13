@@ -33,8 +33,10 @@ jobs:
             - name: test
               run: hatch run dev:test
             - name: release
-              uses: cocogitto/cocogitto-action@main
+              uses: cocogitto/cocogitto-action@v3
               with:
                 release: true
+                git-user: 'muratgozel'
+                git-user-email: 'murat@gozel.com.tr'
             - name: print version
               run: "echo '${{ steps.release.outputs.version }}'"
