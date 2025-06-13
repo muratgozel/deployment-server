@@ -30,6 +30,8 @@ jobs:
                 python-version: ${{ env.PYTHON_VERSION }}
             - name: install hatch
               run: pip install hatch
+            - name: test
+              run: hatch run dev:test
             - name: release
               uses: cocogitto/cocogitto-action@main
               with:

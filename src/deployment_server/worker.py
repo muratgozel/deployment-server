@@ -1,7 +1,4 @@
 import os
-import subprocess
-import venv
-from pathlib import Path
 from celery import Celery
 from celery.schedules import crontab
 from sqlalchemy import select, update
@@ -13,7 +10,6 @@ from deployment_server.models import (
     DeploymentStatusUpdate,
     DeploymentStatus,
 )
-from deployment_server.core import git, systemd
 from deployer import py
 
 
@@ -69,7 +65,7 @@ async def run_deployment_task():
             deployment_rid=deployment.rid,
         )
         session.add(update1)
-        session.commit()
+        await session.commit()
 
         # deploy
         logger.info(f"deploying project {project.name}...")
@@ -85,10 +81,26 @@ async def run_deployment_task():
         try:
             if project.pip_package_name:
                 success, message = py.deploy(project, install_dir)
-                logger.info(f"deploying project {project.name}... done.")
+                if success:
+                    logger.info(f"deploying project {project.name}... done.")
+                    update2 = DeploymentStatusUpdate(
+                        rid=DeploymentStatusUpdate.generate_rid(),
+                        status=DeploymentStatus.SUCCESS,
+                        deployment_rid=deployment.rid,
+                    )
+                    session.add(update2)
+                    await session.commit()
+                    return True
         except Exception as e:
             logger.info(f"deploying project {project.name}... failed. {e}")
-            return None
+
+        update2 = DeploymentStatusUpdate(
+            rid=DeploymentStatusUpdate.generate_rid(),
+            status=DeploymentStatus.FAILED,
+            deployment_rid=deployment.rid,
+        )
+        session.add(update2)
+        await session.commit()
 
         return None
 
@@ -119,7 +131,7 @@ async def create_deployment_task(version: str, repo_parts: tuple[str, str, str])
         )
         session.add(deployment)
         session.add(status_update)
-        session.commit()
+        await session.commit()
 
         logger.info(
             f"creating deployment task for {repo_parts}:{version} is successful"

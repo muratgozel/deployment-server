@@ -60,8 +60,6 @@ async def on_release(
     except:
         raise HTTPException(status_code=400, detail={"error": {"code": "invalid_ref"}})
 
-    # TODO project registration check
-
     create_deployment_task.delay(version, (vendor, owner, name))
 
     return "Accepted"
