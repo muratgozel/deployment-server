@@ -9,6 +9,9 @@ env:
     CI: 1
     GITHUB_TOKEN: ${{ secrets.PERSONAL_PAT }}
     PYTHON_VERSION: "3.12"
+    PYPI_INDEX_URL: ${{ secrets.PYPI_INDEX_URL }}
+    PYPI_USER: ${{ secrets.PYPI_USER }}
+    PYPI_AUTH: ${{ secrets.PYPI_AUTH }}
 
 permissions:
     contents: write # to be able to publish a GitHub release
@@ -36,7 +39,9 @@ jobs:
               uses: cocogitto/cocogitto-action@v3
               with:
                 release: true
-                git-user: 'muratgozel'
-                git-user-email: 'murat@gozel.com.tr'
             - name: print version
               run: "echo '${{ steps.release.outputs.version }}'"
+            - name: build
+              run: "hatch build -c"
+            - name: publish
+              run: "hatch publish --user '${{ env.PYPI_USER }}' --auth '${{ env.PYPI_AUTH }}' --repo '${{ env.PYPI_INDEX_URL }}'"
