@@ -1,27 +1,14 @@
 import re
 from pathlib import Path
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 
-def make_git_url_privileged(git_url: str, token: str = None, user: str = None) -> str:
-    parsed_url = urlparse(git_url)
-    netloc_privileged = (
-        f"{user + ":" if user else ""}{token + "@" if token else ""}{parsed_url.netloc}"
-    )
-    return urlunparse(
-        (parsed_url.scheme, netloc_privileged, parsed_url.path, "", "", "")
-    )
-
-
-def parse_repo_url(repo_url: str):
+def extract_info_from_repo_url(repo_url: str):
     """
     Extracts vendor, owner and repository name from a given repository url.
-    The format of the url can either be http or ssh.
-    The returned owner includes all the paths up to repository name.
-    In GitHub, it is org but in Gitlab, it may contain group/subgroup.
 
-    :param repo_url: git repository url
-    :return: (vendor, owner, name)
+    :param repo_url: A git repository url. Both http and ssh formats are supported.
+    :return: A tuple containing (vendor, owner, name). (gitlab.com, group/subgroup, name) for example.
     """
     repo_url = repo_url.strip()
 
@@ -45,16 +32,16 @@ def parse_repo_url(repo_url: str):
     return vendor, owner, name
 
 
-def extract_version_from_ref(ref: str) -> str:
+def extract_tag_from_ref(ref: str) -> str:
     """
     Extracts version string from git reference.
     refs/tags/0.1.2 -> 0.1.2
-    refs/tags/v0.1.2 -> 0.1.2
+    refs/tags/v0.1.2 -> v0.1.2
 
     :param ref: git reference. "refs/tags/0.1.2" for example.
     :return: version string.
     """
-    pattern = r"^refs/tags/v?(.+)$"
+    pattern = r"^refs/tags/(.+)$"
     matches = re.match(pattern, ref)
     if matches:
         return matches.group(1)

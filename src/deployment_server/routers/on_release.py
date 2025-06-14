@@ -1,6 +1,6 @@
 import json
 from typing import Annotated
-from fastapi import APIRouter, HTTPException, Response, Request, Header, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Response, Request, Header
 from fastapi.responses import PlainTextResponse
 from deployment_server.core import github, git
 from deployment_server.worker import create_deployment_task
@@ -49,17 +49,17 @@ async def on_release(
         )
 
     try:
-        vendor, owner, name = git.parse_repo_url(body["repository"]["git_url"])
+        vendor, owner, name = git.extract_info_from_repo_url(body["repository"]["git_url"])
     except:
         raise HTTPException(
             status_code=400, detail={"error": {"code": "invalid_repo_url"}}
         )
 
     try:
-        version = git.extract_version_from_ref(body["ref"])
+        tag = git.extract_tag_from_ref(body["ref"])
     except:
         raise HTTPException(status_code=400, detail={"error": {"code": "invalid_ref"}})
 
-    create_deployment_task.delay(version, (vendor, owner, name))
+    create_deployment_task.delay(body["repository"]["git_url"], body["ref"])
 
     return "Accepted"

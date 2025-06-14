@@ -40,6 +40,7 @@ class Project(ModelBase):
     rid: Mapped[str]
 
     name: Mapped[str] = mapped_column(String)
+    code: Mapped[str] = mapped_column(String)
     git_url: Mapped[Optional[str]] = mapped_column(String)
     pip_package_name: Mapped[Optional[str]] = mapped_column(String)
     pip_index_url: Mapped[Optional[str]] = mapped_column(String)

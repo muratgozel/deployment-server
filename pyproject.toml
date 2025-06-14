@@ -35,14 +35,17 @@ dependencies = [
   "celery[librabbitmq]",
   "nanoid",
   "GitPython",
-  "Jinja2"
+  "Jinja2",
+  "python-slugify[unidecode]"
 ]
 
 [project.optional-dependencies]
 dev = [
   "pytest",
   "pytest-cov",
-  "pre-commit"
+  "pytest-asyncio",
+  "pre-commit",
+  "httpx"
 ]
 
 [project.urls]
@@ -62,6 +65,7 @@ features = [
 [tool.hatch.envs.dev.scripts]
 test = "pytest {args}"
 test-cov = "pytest --cov-report=term-missing --cov={args}"
+migrate = "dbmate --wait -d src/deployment_server/db/migrations/ up"
 
 [tool.hatch.envs.types]
 extra-dependencies = [

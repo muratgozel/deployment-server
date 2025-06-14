@@ -10,7 +10,7 @@ from deployment_server.models import (
     DeploymentStatusUpdate,
     DeploymentStatus,
 )
-from deployer import py
+from deployment_server.deployer import py
 
 
 worker = Celery("tasks", broker=config.rabbitmq_conn_str)

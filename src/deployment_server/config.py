@@ -7,7 +7,8 @@ load_dotenv()
 
 class Config:
     name = "deployment-server"
-    github_token = os.environ.get("GITHUB_TOKEN")
+    api_user = os.getenv("API_USER")
+    api_secret = os.getenv("API_SECRET")
     postmark_server_token = os.environ.get("POSTMARK_SERVER_TOKEN")
     postmark_from = os.environ.get("POSTMARK_FROM")
     pg_conn_str = (

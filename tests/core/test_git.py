@@ -1,19 +1,21 @@
 from deployment_server.core import git
 
 
-def test_git():
-    result = git.make_git_url_privileged(
-        "git://github.com/coldrune/server.git", "12345"
+def test_extract_info_from_repo_url():
+    samples = (
+        "https://github.com/the-org/the-name.git",
+        "git://github.com/the-org/the-name.git",
+        "git@github.com:/the-org/the-name.git",
     )
-    assert result == "git://12345@github.com/coldrune/server.git"
+    for sample in samples:
+        assert git.extract_info_from_repo_url(sample) == ("github.com", "the-org", "the-name")
 
-    result = git.make_git_url_privileged("https://pypi.gozel.com.tr/simple/", "12345")
-    assert result == "https://12345@pypi.gozel.com.tr/simple/"
 
-    result = git.make_git_url_privileged(
-        "https://pypi.gozel.com.tr/simple/", "12345", "user"
+def test_extract_version_from_ref():
+    samples = (
+        ("refs/tags/0.1.2", "0.1.2"),
+        ("refs/tags/v0.1.2", "v0.1.2"),
+        ("refs/tags/v0.1.2-dev1", "v0.1.2-dev1")
     )
-    assert result == "https://user:12345@pypi.gozel.com.tr/simple/"
-
-    result = git.make_git_url_privileged("https://pypi.gozel.com.tr/simple/")
-    assert result == "https://pypi.gozel.com.tr/simple/"
+    for sample in samples:
+        assert git.extract_tag_from_ref(sample[0]) == sample[1]

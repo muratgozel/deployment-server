@@ -5,7 +5,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from deployment_server.dependencies import logger, AsyncSessionLocal
-from deployment_server.routers import on_release
+from deployment_server.routers import on_release, project
 
 
 @asynccontextmanager
@@ -66,6 +66,7 @@ app.openapi = get_openapi_custom
 
 
 app.include_router(on_release.router)
+app.include_router(project.router)
 
 
 @app.get("/", response_class=PlainTextResponse, operation_id="home")

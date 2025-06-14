@@ -5,6 +5,7 @@ create table project (
     updated_at timestamp with time zone,
     removed_at timestamp with time zone,
     name text not null,
+    code text not null,
     git_url text,
     pip_package_name text,
     pip_index_url text,
