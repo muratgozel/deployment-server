@@ -1,6 +1,5 @@
 import os
 import pytest
-from sqlalchemy import text, create_engine
 from dotenv import load_dotenv
 
 
@@ -19,7 +18,4 @@ def configure():
 
     # teardown
 
-    engine = create_engine(os.environ.get("DATABASE_URL"))
-    with engine.connect() as conn:
-        conn.execute(text("delete from project where removed_at is not null"))
-        conn.commit()
+    pass

@@ -1,7 +1,19 @@
 import pytest
 import os
 from httpx import ASGITransport, AsyncClient, BasicAuth
+from sqlalchemy import text, create_engine
 from deployment_server.app import app
+
+
+@pytest.fixture(scope="module", autouse=True)
+def configure():
+    # setup
+    yield
+    # teardown
+    engine = create_engine(os.environ.get("DATABASE_URL"))
+    with engine.connect() as conn:
+        conn.execute(text("delete from project where removed_at is not null"))
+        conn.commit()
 
 
 @pytest.mark.asyncio
