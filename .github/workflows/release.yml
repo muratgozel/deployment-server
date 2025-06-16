@@ -47,8 +47,8 @@ jobs:
             - name: Create GitHub Release
               if: steps.release.outputs.version != ''
               run: |
-                gh release create v${{ steps.release.outputs.version }} \
-                  --title "Release v${{ steps.release.outputs.version }}" \
+                gh release create ${{ steps.release.outputs.version }} \
+                  --title "Release ${{ steps.release.outputs.version }}" \
                   --generate-notes \
                   --latest
             - name: build
