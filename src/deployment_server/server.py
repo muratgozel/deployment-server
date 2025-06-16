@@ -7,7 +7,11 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import PlainTextResponse
-from deployment_server.constants import CODENAME, SERVER_PORT_FALLBACK, APPLICATION_MODE_FALLBACK
+from deployment_server.constants import (
+    CODENAME,
+    SERVER_PORT_FALLBACK,
+    APPLICATION_MODE_FALLBACK,
+)
 from deployment_server.modules.env import is_dev, is_prod
 
 
@@ -38,7 +42,9 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request, exc):
-        return JSONResponse(content={"error": {"code": "invalid_request"}}, status_code=400)
+        return JSONResponse(
+            content={"error": {"code": "invalid_request"}}, status_code=400
+        )
 
     @app.get("/", response_class=PlainTextResponse, operation_id="home")
     async def home():
@@ -48,23 +54,44 @@ def create_app() -> FastAPI:
 
 
 def init():
-    parser = argparse.ArgumentParser(prog="Application Init Arguments Parser", description="Provides init arguments to the application to configure the way application works.")
-    parser.add_argument('--mode', required=False, help="Runtime mode for the application. testing, staging, production etc.")
-    parser.add_argument("--config-dir", required=False, help=f"A directory where application config will be kept. ~/{CODENAME} by default.")
-    parser.add_argument("--port", required=False, help="Port number to run the server on.")
+    parser = argparse.ArgumentParser(
+        prog="Application Init Arguments Parser",
+        description="Provides init arguments to the application to configure the way application works.",
+    )
+    parser.add_argument(
+        "--mode",
+        required=False,
+        help="Runtime mode for the application. testing, staging, production etc.",
+    )
+    parser.add_argument(
+        "--config-dir",
+        required=False,
+        help=f"A directory where application config will be kept. ~/{CODENAME} by default.",
+    )
+    parser.add_argument(
+        "--port", required=False, help="Port number to run the server on."
+    )
     args = parser.parse_args()
-    os.environ["APPLICATION_MODE"] = args.mode or os.environ.get("APPLICATION_MODE") or APPLICATION_MODE_FALLBACK
-    os.environ["APPLICATION_CONFIG_DIR"] = os.path.expanduser(args.config_dir or os.environ.get("APPLICATION_CONFIG_DIR") or f"~/{CODENAME}")
-    os.environ["APPLICATION_SERVER_PORT"] = args.port or os.environ.get("APPLICATION_SERVER_PORT") or SERVER_PORT_FALLBACK
+    os.environ["APPLICATION_MODE"] = (
+        args.mode or os.environ.get("APPLICATION_MODE") or APPLICATION_MODE_FALLBACK
+    )
+    os.environ["APPLICATION_CONFIG_DIR"] = os.path.expanduser(
+        args.config_dir or os.environ.get("APPLICATION_CONFIG_DIR") or f"~/{CODENAME}"
+    )
+    os.environ["APPLICATION_SERVER_PORT"] = (
+        args.port or os.environ.get("APPLICATION_SERVER_PORT") or SERVER_PORT_FALLBACK
+    )
     print(f"running in {os.environ.get("APPLICATION_MODE")} mode.")
 
 
 if __name__ == "__main__":
     init()
 
-    uvicorn.run(app="src.deployment_server.server:create_app",
-                host="0.0.0.0",
-                port=int(os.environ.get("APPLICATION_SERVER_PORT")),
-                reload=is_dev(),
-                factory=True,
-                fd=3 if os.environ.get("LISTEN_FDS") and is_prod() is True else None)
+    uvicorn.run(
+        app="src.deployment_server.server:create_app",
+        host="0.0.0.0",
+        port=int(os.environ.get("APPLICATION_SERVER_PORT")),
+        reload=is_dev(),
+        factory=True,
+        fd=3 if os.environ.get("LISTEN_FDS") and is_prod() is True else None,
+    )

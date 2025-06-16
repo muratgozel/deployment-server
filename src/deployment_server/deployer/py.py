@@ -25,12 +25,21 @@ def deploy(project: Project, install_dir: str):
     pip_exec = Path(venv_dir) / "bin" / "pip"
 
     def get_package_location() -> tuple[bool, str, Path | None]:
-        result = subprocess.run([str(pip_exec), "show", project.pip_package_name], cwd=install_dir, capture_output=True, text=True)
+        result = subprocess.run(
+            [str(pip_exec), "show", project.pip_package_name],
+            cwd=install_dir,
+            capture_output=True,
+            text=True,
+        )
         if result.returncode != 0:
             return False, result.stderr, None
         for line in result.stdout.splitlines():
             if line.startswith("Location:"):
-                return True, "", Path(line[line.find(":") + 1:].strip()) / project.pip_package_name
+                return (
+                    True,
+                    "",
+                    Path(line[line.find(":") + 1 :].strip()) / project.pip_package_name,
+                )
         return False, "couldn't find location", None
 
     priv_url = git.make_git_url_privileged(
@@ -44,9 +53,7 @@ def deploy(project: Project, install_dir: str):
         priv_url,
         project.pip_package_name,
     ]
-    result = subprocess.run(
-        args, cwd=install_dir, capture_output=True, text=True
-    )
+    result = subprocess.run(args, cwd=install_dir, capture_output=True, text=True)
     if result.returncode != 0:
         logger.debug(f"verifying package... failed: {result.stderr}")
         return False, "verifying package... failed."
@@ -59,7 +66,15 @@ def deploy(project: Project, install_dir: str):
         return False, "running db migrations... failed."
     db_migrations_dir = pkg_dir / "db" / "migrations"
     if db_migrations_dir.exists():
-        args = ["dbmate", "--wait", "--wait-timeout", "10", "--migrations-dir", str(db_migrations_dir), "up"]
+        args = [
+            "dbmate",
+            "--wait",
+            "--wait-timeout",
+            "10",
+            "--migrations-dir",
+            str(db_migrations_dir),
+            "up",
+        ]
         result = subprocess.run(args, capture_output=True, text=True)
         if result.returncode != 0:
             logger.debug(f"running db migrations... failed: {result.stderr}")
@@ -90,33 +105,25 @@ def deploy(project: Project, install_dir: str):
 
     if should_reload_systemd:
         args = ["sudo", "systemctl", "daemon-reload"]
-        result = subprocess.run(
-            args, cwd=install_dir, capture_output=True, text=True
-        )
+        result = subprocess.run(args, cwd=install_dir, capture_output=True, text=True)
         if result.returncode != 0:
             Path(socket_file).unlink(missing_ok=True)
             Path(service_file).unlink(missing_ok=True)
             logger.debug(f"verifying systemd service... failed: {result.stderr}")
             return False, "verifying systemd service... failed."
         args = ["sudo", "systemctl", "enable", socket_name]
-        result = subprocess.run(
-            args, cwd=install_dir, capture_output=True, text=True
-        )
+        result = subprocess.run(args, cwd=install_dir, capture_output=True, text=True)
         if result.returncode != 0:
             logger.debug(f"verifying systemd service... failed: {result.stderr}")
             return False, "verifying systemd service... failed."
         args = ["sudo", "systemctl", "start", socket_name]
-        result = subprocess.run(
-            args, cwd=install_dir, capture_output=True, text=True
-        )
+        result = subprocess.run(args, cwd=install_dir, capture_output=True, text=True)
         if result.returncode != 0:
             logger.debug(f"verifying systemd service... failed: {result.stderr}")
             return False, "verifying systemd service... failed."
     else:
         args = ["sudo", "systemctl", "restart", service_name]
-        result = subprocess.run(
-            args, cwd=install_dir, capture_output=True, text=True
-        )
+        result = subprocess.run(args, cwd=install_dir, capture_output=True, text=True)
         if result.returncode != 0:
             logger.debug(f"verifying systemd service... failed: {result.stderr}")
             return False, "verifying systemd service... failed."

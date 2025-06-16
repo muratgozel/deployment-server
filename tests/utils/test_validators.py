@@ -11,13 +11,9 @@ def test_validate():
         "http://[::]/coldrune/server.git",
         "http://[2001:db8::]/coldrune/server.git",
         "https://pypi.gozel.com.tr/",
-        "git://github.com/"
+        "git://github.com/",
     )
-    invalid_samples = (
-        None,
-        "",
-        "git://git://github.com/coldrune/server.git"
-    )
+    invalid_samples = (None, "", "git://git://github.com/coldrune/server.git")
 
     for sample in valid_samples:
         assert validators.validate_url(sample)[0] == True

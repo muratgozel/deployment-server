@@ -13,34 +13,52 @@ from deployment_server.utils import converters, validators
 
 
 ProjectRid = Annotated[str, Field(max_length=64, min_length=1)]
-ProjectService = Annotated[ProjectService, Depends(Provide[ServerContainer.server.project_service])]
+ProjectService = Annotated[
+    ProjectService, Depends(Provide[ServerContainer.server.project_service])
+]
 
 
 security = HTTPBasic()
 AuthCredentials = Annotated[HTTPBasicCredentials, Depends(security)]
-AuthConfig = Annotated[providers.Configuration, Depends(Provide[ServerContainer.server.config])]
+AuthConfig = Annotated[
+    providers.Configuration, Depends(Provide[ServerContainer.server.config])
+]
 
 
 @inject
 async def authenticate(credentials: AuthCredentials, config: AuthConfig):
-    is_correct_user = secrets.compare_digest(credentials.username.encode(), config["api_user"].encode())
-    is_correct_secret = secrets.compare_digest(credentials.password.encode(), config["api_secret"].encode())
+    is_correct_user = secrets.compare_digest(
+        credentials.username.encode(), config["api_user"].encode()
+    )
+    is_correct_secret = secrets.compare_digest(
+        credentials.password.encode(), config["api_secret"].encode()
+    )
     if not (is_correct_user and is_correct_secret):
-        raise HTTPException(status_code=401,
-                            detail={"error":{"code":"Unauthorized"}},
-                            headers={"WWW-Authenticate": "Basic"})
+        raise HTTPException(
+            status_code=401,
+            detail={"error": {"code": "Unauthorized"}},
+            headers={"WWW-Authenticate": "Basic"},
+        )
     return credentials.username
 
 
-router = APIRouter(prefix="/project", tags=["project"], dependencies=[Depends(authenticate)])
+router = APIRouter(
+    prefix="/project", tags=["project"], dependencies=[Depends(authenticate)]
+)
 
 
 class ProjectCreateRequestBody(BaseModel):
     name: Annotated[str, Field(max_length=64, min_length=1)]
     code: Annotated[str | None, Field(max_length=64, min_length=1, default=None)] = None
-    git_url: Annotated[str | None, AfterValidator(validators.validate_url_pydantic)] = None
-    pip_package_name: Annotated[str | None, AfterValidator(validators.validate_pip_package_name_pydantic)] = None
-    pip_index_url: Annotated[str | None, AfterValidator(validators.validate_url_pydantic)] = None
+    git_url: Annotated[str | None, AfterValidator(validators.validate_url_pydantic)] = (
+        None
+    )
+    pip_package_name: Annotated[
+        str | None, AfterValidator(validators.validate_pip_package_name_pydantic)
+    ] = None
+    pip_index_url: Annotated[
+        str | None, AfterValidator(validators.validate_url_pydantic)
+    ] = None
     pip_index_user: Annotated[str | None, Field(max_length=64, min_length=1)] = None
     pip_index_auth: Annotated[str | None, Field(max_length=64, min_length=1)] = None
 
@@ -50,26 +68,35 @@ ProjectModel = converters.sqlalchemy_to_pydantic(Project, "ProjectModel")
 
 @router.post("/", response_model=ProjectModel, operation_id="project_create")
 @inject
-async def project_create(body: ProjectCreateRequestBody, project_service: ProjectService):
+async def project_create(
+    body: ProjectCreateRequestBody, project_service: ProjectService
+):
     code = project_service.validate_code(body.code or body.name)
     if len(code) == 0:
-        raise HTTPException(status_code=400, detail={"error":{"code":"invalid_code"}})
+        raise HTTPException(status_code=400, detail={"error": {"code": "invalid_code"}})
 
     existing_project = await project_service.get_by_code(code)
     if existing_project is not None:
-        raise HTTPException(status_code=409, detail={"error":{"code":"project_already_exists"}})
+        raise HTTPException(
+            status_code=409, detail={"error": {"code": "project_already_exists"}}
+        )
 
-    new_project = await project_service.create(name=body.name,
-                                               code=code,
-                                               git_url=body.git_url,
-                                               pip_package_name=body.pip_package_name,
-                                               pip_index_url=body.pip_index_url,
-                                               pip_index_user=body.pip_index_user,
-                                               pip_index_auth=body.pip_index_auth)
+    new_project = await project_service.create(
+        name=body.name,
+        code=code,
+        git_url=body.git_url,
+        pip_package_name=body.pip_package_name,
+        pip_index_url=body.pip_index_url,
+        pip_index_user=body.pip_index_user,
+        pip_index_auth=body.pip_index_auth,
+    )
     return new_project
 
 
-ProjectService: Annotated[ProjectService, Depends(Provide[ServerContainer.server.project_service])]
+ProjectService: Annotated[
+    ProjectService, Depends(Provide[ServerContainer.server.project_service])
+]
+
 
 @router.get("/list", response_model=list[ProjectModel], operation_id="project_list")
 @inject
@@ -82,7 +109,9 @@ async def project_list(project_service: ProjectService):
 async def project_get(rid: ProjectRid, project_service: ProjectService):
     project = await project_service.get_by_rid(rid)
     if project is None:
-        raise HTTPException(status_code=409, detail={"error":{"code":"project_not_found"}})
+        raise HTTPException(
+            status_code=409, detail={"error": {"code": "project_not_found"}}
+        )
     return project
 
 
@@ -90,12 +119,16 @@ class ProjectRemoveResponse(BaseModel):
     rid: str
 
 
-@router.delete("/{rid}", response_class=PlainTextResponse, operation_id="project_remove")
+@router.delete(
+    "/{rid}", response_class=PlainTextResponse, operation_id="project_remove"
+)
 @inject
 async def project_remove(rid: ProjectRid, project_service: ProjectService):
     project = await project_service.get_by_rid(rid)
     if project is None:
-        raise HTTPException(status_code=409, detail={"error":{"code":"project_not_found"}})
+        raise HTTPException(
+            status_code=409, detail={"error": {"code": "project_not_found"}}
+        )
 
     result = await project_service.remove_by_rid(project.rid)
     status_code = 204 if result is True else 404

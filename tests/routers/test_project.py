@@ -8,10 +8,12 @@ from deployment_server.server import create_app
 async def test_project():
     app = create_app()
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", follow_redirects=True) as client:
-        body_invalid = {"yo":True}
-        headers = {"Content-Type":"application/json"}
-        response1 = await client.post('/project', json=body_invalid, headers=headers)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", follow_redirects=True
+    ) as client:
+        body_invalid = {"yo": True}
+        headers = {"Content-Type": "application/json"}
+        response1 = await client.post("/project", json=body_invalid, headers=headers)
         assert response1.status_code == 401
 
         body_valid = {
@@ -20,10 +22,15 @@ async def test_project():
             "pip_package_name": "some-server",
             "pip_index_url": "https://pypi.gozel.com.tr/",
             "pip_index_user": "user",
-            "pip_index_auth": "pass"
+            "pip_index_auth": "pass",
         }
-        auth = BasicAuth(username=app.container.config.server.api_user(), password=app.container.config.server.api_secret())
-        response2 = await client.post('/project', json=body_valid, headers=headers, auth=auth)
+        auth = BasicAuth(
+            username=app.container.config.server.api_user(),
+            password=app.container.config.server.api_secret(),
+        )
+        response2 = await client.post(
+            "/project", json=body_valid, headers=headers, auth=auth
+        )
         assert response2.status_code == 200
         response2_dict = response2.json()
         assert "rid" in response2_dict
@@ -39,7 +46,9 @@ async def test_project():
         assert isinstance(response_list_dict, list)
         assert response_list_dict[0]["rid"] == response2_dict["rid"]
 
-        response_remove = await client.delete(f"/project/{response2_dict['rid']}", auth=auth)
+        response_remove = await client.delete(
+            f"/project/{response2_dict['rid']}", auth=auth
+        )
         assert response_remove.status_code == 204
 
     # cleanup

@@ -44,4 +44,3 @@ create table deployment_status_update (
 --     on deployment_status_update (created_at desc);
 
 -- migrate:down
-

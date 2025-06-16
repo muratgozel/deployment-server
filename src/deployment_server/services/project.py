@@ -22,15 +22,26 @@ class ProjectService:
             return False
         return validated_code
 
-    async def create(self, name: str, code: str, git_url: str = None, pip_package_name: str = None, pip_index_url: str = None, pip_index_user: str = None, pip_index_auth: str = None):
-        project = Project(rid=Project.generate_rid(),
-                          name=name,
-                          code=code,
-                          git_url=git_url,
-                          pip_package_name=pip_package_name,
-                          pip_index_url=pip_index_url,
-                          pip_index_user=pip_index_user,
-                          pip_index_auth=pip_index_auth)
+    async def create(
+        self,
+        name: str,
+        code: str,
+        git_url: str = None,
+        pip_package_name: str = None,
+        pip_index_url: str = None,
+        pip_index_user: str = None,
+        pip_index_auth: str = None,
+    ):
+        project = Project(
+            rid=Project.generate_rid(),
+            name=name,
+            code=code,
+            git_url=git_url,
+            pip_package_name=pip_package_name,
+            pip_index_url=pip_index_url,
+            pip_index_user=pip_index_user,
+            pip_index_auth=pip_index_auth,
+        )
         return await self.project_repo.add(project=project)
 
     async def remove_by_rid(self, rid: str):

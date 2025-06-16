@@ -49,7 +49,9 @@ async def on_release(
         )
 
     try:
-        vendor, owner, name = git.extract_info_from_repo_url(body["repository"]["git_url"])
+        vendor, owner, name = git.extract_info_from_repo_url(
+            body["repository"]["git_url"]
+        )
     except:
         raise HTTPException(
             status_code=400, detail={"error": {"code": "invalid_repo_url"}}

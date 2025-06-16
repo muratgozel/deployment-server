@@ -7,7 +7,14 @@ from deployment_server.containers import ServerContainer
 
 
 @inject
-def verify_signature(body, signature, token: Annotated[providers.ConfigurationOption, Provide[ServerContainer.gateways.config.github_webhook_secret_token]]):
+def verify_signature(
+    body,
+    signature,
+    token: Annotated[
+        providers.ConfigurationOption,
+        Provide[ServerContainer.gateways.config.github_webhook_secret_token],
+    ],
+):
     secret_token = token()
 
     if not secret_token:

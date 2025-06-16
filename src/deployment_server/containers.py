@@ -49,28 +49,43 @@ async def create_session_factory(conn_str: str):
 class ServerGateways(containers.DeclarativeContainer):
     config = providers.Configuration(strict=True)
     postmark = PostmarkClient(server_token=config.postmark_server_token)
-    session_factory = providers.Resource(create_session_factory, conn_str=config.pg_conn_str)
+    session_factory = providers.Resource(
+        create_session_factory, conn_str=config.pg_conn_str
+    )
 
 
 class Server(containers.DeclarativeContainer):
     config = providers.Configuration(strict=True)
     gateways = providers.DependenciesContainer()
-    project_repo = providers.Factory(ProjectRepository, session_factory=gateways.session_factory)
+    project_repo = providers.Factory(
+        ProjectRepository, session_factory=gateways.session_factory
+    )
     project_service = providers.Factory(ProjectService, project_repo=project_repo)
 
 
 def find_yaml_files() -> list[str | Path]:
     config_dir = Path(os.environ.get("APPLICATION_CONFIG_DIR"))
     os.makedirs(config_dir.as_posix(), exist_ok=True)
-    config_file_names_to_load = ("config.yaml", f"config_{os.environ.get('APPLICATION_MODE')}.yaml")
-    yaml_files = [config_dir / name for name in config_file_names_to_load if (config_dir / name).exists()]
+    config_file_names_to_load = (
+        "config.yaml",
+        f"config_{os.environ.get('APPLICATION_MODE')}.yaml",
+    )
+    yaml_files = [
+        config_dir / name
+        for name in config_file_names_to_load
+        if (config_dir / name).exists()
+    ]
     if len(yaml_files) == 0:
-        raise FileNotFoundError(f"no configuration files found in {config_dir.as_posix()}")
+        raise FileNotFoundError(
+            f"no configuration files found in {config_dir.as_posix()}"
+        )
     return yaml_files
 
 
 class ServerContainer(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(modules=["deployment_server.routers.project"])
+    wiring_config = containers.WiringConfiguration(
+        modules=["deployment_server.routers.project"]
+    )
     config = providers.Configuration(yaml_files=find_yaml_files(), strict=True)
     core = providers.Container(Core, config=config.core)
     gateways = providers.Container(ServerGateways, config=config.server_gateways)

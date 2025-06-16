@@ -27,13 +27,19 @@ def validate_url_pydantic(url: str):
     return url.lower()
 
 
-def validate_url(url: str, required_attrs: str = ("scheme", "netloc", "path"), scheme_whitelist: tuple[str] = ("https", "http", "git")):
+def validate_url(
+    url: str,
+    required_attrs: str = ("scheme", "netloc", "path"),
+    scheme_whitelist: tuple[str] = ("https", "http", "git"),
+):
     try:
         tokens = urlparse(url)
     except Exception as ex:
         return False, f"urlparse error: {str(ex)}"
 
-    all_exist = all(getattr(tokens, qualifying_attr) for qualifying_attr in required_attrs)
+    all_exist = all(
+        getattr(tokens, qualifying_attr) for qualifying_attr in required_attrs
+    )
     if not all_exist:
         return False, "missing required tokens"
 
@@ -41,7 +47,12 @@ def validate_url(url: str, required_attrs: str = ("scheme", "netloc", "path"), s
         return False, "unsupported scheme"
 
     if "netloc" in required_attrs:
-        if re.fullmatch(r"(?:" + ipv4_re + "|" + ipv6_re + "|" + host_re + ")", tokens.netloc) is None:
+        if (
+            re.fullmatch(
+                r"(?:" + ipv4_re + "|" + ipv6_re + "|" + host_re + ")", tokens.netloc
+            )
+            is None
+        ):
             return False, "invalid netloc"
 
     if "path" in required_attrs:
@@ -60,7 +71,9 @@ def validate_pip_package_name_pydantic(name: str):
 
 
 def validate_pip_package_name(name: str):
-    matches = re.match(f"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", name, re.IGNORECASE)
+    matches = re.match(
+        f"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", name, re.IGNORECASE
+    )
     return False if not matches else True
 
 
