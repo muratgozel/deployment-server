@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.1.1](https://github.com/muratgozel/deployment-server/compare/9e83fb696973345cb63f04b4e9d97d95e172636c..0.1.1) - 2025-06-16
+#### Bug Fixes
+- github releasing - ([3b773a1](https://github.com/muratgozel/deployment-server/commit/3b773a15d512207517620037333a0e457fe9e3b6)) - Murat Gözel
+#### Continuous Integration
+- github releasing - ([9e83fb6](https://github.com/muratgozel/deployment-server/commit/9e83fb696973345cb63f04b4e9d97d95e172636c)) - Murat Gözel
+
+- - -
+
 ## [0.1.0](https://github.com/muratgozel/deployment-server/compare/82c3422b66eec7d7e6fba0f257cac70ab315638e..0.1.0) - 2025-06-16
 #### Bug Fixes
 - core - ([02539ed](https://github.com/muratgozel/deployment-server/commit/02539edebebafabd9c6db93f7e8aed5e2b426828)) - Murat Gözel
