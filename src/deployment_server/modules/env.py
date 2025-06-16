@@ -13,6 +13,11 @@ def is_testing():
     return True if "test" in mode else False
 
 
+def is_staging():
+    mode = os.environ.get("APPLICATION_MODE")
+    return True if "staging" in mode else False
+
+
 def is_prod():
     mode = os.environ.get("APPLICATION_MODE")
     return True if "production" in mode or "prod" in mode else False
