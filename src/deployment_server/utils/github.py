@@ -1,10 +1,14 @@
 import hashlib
 import hmac
-from deployment_server.config import config
+from typing import Annotated
+from dependency_injector import providers
+from dependency_injector.wiring import inject, Provide
+from deployment_server.containers import ServerContainer
 
 
-def verify_signature(body, signature):
-    secret_token = config.github_webhook_secret_token
+@inject
+def verify_signature(body, signature, token: Annotated[providers.ConfigurationOption, Provide[ServerContainer.gateways.config.github_webhook_secret_token]]):
+    secret_token = token()
 
     if not secret_token:
         raise ValueError("Missing github_webhook_secret_token.")

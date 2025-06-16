@@ -26,6 +26,9 @@ classifiers = [
 ]
 dependencies = [
   "dotenv",
+  "pyyaml",
+  "dependency-injector",
+  "uvicorn[standard]",
   "fastapi[standard]",
   "pydantic",
   "psycopg2-binary",

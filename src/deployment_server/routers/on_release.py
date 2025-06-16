@@ -2,7 +2,7 @@ import json
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, Response, Request, Header
 from fastapi.responses import PlainTextResponse
-from deployment_server.core import github, git
+from deployment_server.utils import github, git
 from deployment_server.worker import create_deployment_task
 
 

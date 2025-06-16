@@ -1,23 +1,13 @@
 import pytest
-import os
 from httpx import ASGITransport, AsyncClient, BasicAuth
-from sqlalchemy import text, create_engine
-from deployment_server.app import app
-
-
-@pytest.fixture(scope="module", autouse=True)
-def configure():
-    # setup
-    yield
-    # teardown
-    engine = create_engine(os.environ.get("DATABASE_URL"))
-    with engine.connect() as conn:
-        conn.execute(text("delete from project where removed_at is not null"))
-        conn.commit()
+from sqlalchemy import text
+from deployment_server.server import create_app
 
 
 @pytest.mark.asyncio
 async def test_project():
+    app = create_app()
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", follow_redirects=True) as client:
         body_invalid = {"yo":True}
         headers = {"Content-Type":"application/json"}
@@ -32,7 +22,7 @@ async def test_project():
             "pip_index_user": "user",
             "pip_index_auth": "pass"
         }
-        auth = BasicAuth(username=os.environ.get('API_USER'), password=os.environ.get('API_SECRET'))
+        auth = BasicAuth(username=app.container.config.server.api_user(), password=app.container.config.server.api_secret())
         response2 = await client.post('/project', json=body_valid, headers=headers, auth=auth)
         assert response2.status_code == 200
         response2_dict = response2.json()
@@ -41,15 +31,19 @@ async def test_project():
         response3 = await client.get(f"/project/{response2_dict['rid']}", auth=auth)
         assert response3.status_code == 200
         response3_dict = response3.json()
-        assert response3_dict["project"]["rid"] == response2_dict["rid"]
+        assert response3_dict["rid"] == response2_dict["rid"]
 
         response_list = await client.get("/project/list", auth=auth)
         assert response_list.status_code == 200
         response_list_dict = response_list.json()
-        assert "projects" in response_list_dict
-        assert response_list_dict["projects"][0]["rid"] == response2_dict["rid"]
+        assert isinstance(response_list_dict, list)
+        assert response_list_dict[0]["rid"] == response2_dict["rid"]
 
         response_remove = await client.delete(f"/project/{response2_dict['rid']}", auth=auth)
-        assert response_remove.status_code == 200
-        response_remove_dict = response_remove.json()
-        assert response_remove_dict["rid"] == response2_dict["rid"]
+        assert response_remove.status_code == 204
+
+    # cleanup
+    session_factory = await app.container.gateways.session_factory()
+    async with session_factory() as session:
+        await session.execute(text("delete from project where removed_at is not null"))
+        await session.commit()

@@ -1,4 +1,4 @@
-from deployment_server.core import git
+from deployment_server.utils import git
 
 
 def test_extract_info_from_repo_url():

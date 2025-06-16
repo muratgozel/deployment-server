@@ -1,0 +1,3 @@
+CODENAME = "deployment-server-25"
+SERVER_PORT_FALLBACK = "8000"
+APPLICATION_MODE_FALLBACK = "default"

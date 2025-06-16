@@ -34,7 +34,7 @@ jobs:
             - name: install hatch
               run: pip install hatch
             - name: test
-              run: hatch run dev:test
+              run: hatch run dev:test test/utils # NOTE: tests that includes database connections excluded
             - name: release
               uses: cocogitto/cocogitto-action@v3
               with:

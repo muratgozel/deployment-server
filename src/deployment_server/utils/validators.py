@@ -1,5 +1,6 @@
 import re
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
+
 
 ul = "\u00a1-\uffff"
 ipv4_re = (
@@ -20,13 +21,13 @@ tld_re = tld_no_fqdn_re + r"\.?"
 host_re = "(" + hostname_re + domain_re + tld_re + "|localhost)"
 
 
-def validate_pydantic(url: str):
-    if validate(url)[0] is False:
+def validate_url_pydantic(url: str):
+    if validate_url(url)[0] is False:
         raise ValueError("invalid url")
     return url.lower()
 
 
-def validate(url: str, required_attrs: str = ("scheme", "netloc", "path"), scheme_whitelist: tuple[str] = ("https", "http", "git")):
+def validate_url(url: str, required_attrs: str = ("scheme", "netloc", "path"), scheme_whitelist: tuple[str] = ("https", "http", "git")):
     try:
         tokens = urlparse(url)
     except Exception as ex:
@@ -52,13 +53,16 @@ def validate(url: str, required_attrs: str = ("scheme", "netloc", "path"), schem
     return True, ""
 
 
-def add_auth(url: str, password: str = None, user: str = None):
-    parsed_url = urlparse(url)
-    netloc_with_auth = (
-        (user + ":" if user else "") +
-        (password + "@" if password else "") +
-        parsed_url.netloc
-    )
-    return urlunparse(
-        (parsed_url.scheme, netloc_with_auth, parsed_url.path, "", "", "")
-    )
+def validate_pip_package_name_pydantic(name: str):
+    if validate_pip_package_name(name) is True:
+        return normalize_pip_package_name(name)
+    raise ValueError("invalid package name")
+
+
+def validate_pip_package_name(name: str):
+    matches = re.match(f"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", name, re.IGNORECASE)
+    return False if not matches else True
+
+
+def normalize_pip_package_name(name: str):
+    return re.sub(r"[-_.]+", "-", name).lower()

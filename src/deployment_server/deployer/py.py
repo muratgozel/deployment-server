@@ -5,7 +5,7 @@ from pathlib import Path
 from deployment_server.config import config
 from deployment_server.dependencies import logger
 from deployment_server.models import Project
-from deployment_server.core import git, systemd
+from deployment_server.utils import systemd, git
 
 
 def deploy(project: Project, install_dir: str):
