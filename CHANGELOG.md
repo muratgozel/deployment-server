@@ -2,6 +2,20 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.1.0](https://github.com/muratgozel/deployment-server/compare/82c3422b66eec7d7e6fba0f257cac70ab315638e..0.1.0) - 2025-06-16
+#### Bug Fixes
+- core - ([02539ed](https://github.com/muratgozel/deployment-server/commit/02539edebebafabd9c6db93f7e8aed5e2b426828)) - Murat Gözel
+#### Continuous Integration
+- test command fix - ([e1b5394](https://github.com/muratgozel/deployment-server/commit/e1b539422adf51ff67bbcd3015c674c559037375)) - Murat Gözel
+- publish as a package - ([b859980](https://github.com/muratgozel/deployment-server/commit/b85998015750ad586f95a26e3798969504bbdb9b)) - Murat Gözel
+- configure github releases - ([82c3422](https://github.com/muratgozel/deployment-server/commit/82c3422b66eec7d7e6fba0f257cac70ab315638e)) - Murat Gözel
+#### Features
+- project management - ([6a22989](https://github.com/muratgozel/deployment-server/commit/6a22989acbebbe2a5c8f5be1b314b383dfdc5223)) - Murat Gözel
+#### Tests
+- added database cleanup with correct fixture - ([2c0561f](https://github.com/muratgozel/deployment-server/commit/2c0561f779147efc3a4b575e5561324db1c3217d)) - Murat Gözel
+
+- - -
+
 ## [0.0.1](https://github.com/coldrune/server/compare/8fd0a9e2a15a0f9080014de5e44f51a45469066c..0.0.1) - 2025-06-13
 #### Bug Fixes
 - deployments - ([8fd0a9e](https://github.com/coldrune/server/commit/8fd0a9e2a15a0f9080014de5e44f51a45469066c)) - Murat Gözel
