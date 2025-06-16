@@ -24,13 +24,13 @@ jobs:
     release:
         runs-on: ubuntu-24.04
         steps:
-            - uses: actions/checkout@v4
-              with:
-                fetch-depth: 0
             - name: setup python
               uses: actions/setup-python@v4
               with:
                 python-version: ${{ env.PYTHON_VERSION }}
+            - uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
             - name: install hatch
               run: pip install hatch
             - name: test
@@ -44,6 +44,13 @@ jobs:
                 git-user-email: 'murat@gozel.com.tr'
             - name: print version
               run: "echo '${{ steps.release.outputs.version }}'"
+            - name: Create GitHub Release
+              if: steps.release.outputs.version != ''
+              run: |
+                gh release create v${{ steps.release.outputs.version }} \
+                  --title "Release v${{ steps.release.outputs.version }}" \
+                  --generate-notes \
+                  --latest
             - name: build
               run: "hatch build -c"
             - name: publish
