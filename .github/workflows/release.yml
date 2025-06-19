@@ -12,6 +12,9 @@ env:
     PYPI_INDEX_URL: ${{ secrets.PYPI_INDEX_URL }}
     PYPI_USER: ${{ secrets.PYPI_USER }}
     PYPI_AUTH: ${{ secrets.PYPI_AUTH }}
+    DEPLOYMENT_SERVER_URL: ${{ secrets.DEPLOYMENT_SERVER_URL }}
+    DEPLOYMENT_SERVER_USER: ${{ secrets.DEPLOYMENT_SERVER_USER }}
+    DEPLOYMENT_SERVER_PASS: ${{ secrets.DEPLOYMENT_SERVER_PASS }}
 
 permissions:
     contents: write # to be able to publish a GitHub release
@@ -59,9 +62,9 @@ jobs:
               if: steps.release.outputs.version != ''
               run: "hatch publish --user '${{ env.PYPI_USER }}' --auth '${{ env.PYPI_AUTH }}' --repo '${{ env.PYPI_INDEX_URL }}'"
             - name: Trigger deploy
-              if: secrets.DEPLOYMENT_SERVER_URL != ''
+              if: env.DEPLOYMENT_SERVER_URL
               run: |
-                curl -X POST "${{ secrets.DEPLOYMENT_SERVER_URL }}" \
+                curl -X POST "${{ env.DEPLOYMENT_SERVER_URL }}" \
                 -H "Content-Type: application/json" \
-                -u "${{ secrets.DEPLOYMENT_SERVER_USER }}:${{ secrets.DEPLOYMENT_SERVER_PASS }}" \
+                -u "${{ env.DEPLOYMENT_SERVER_USER }}:${{ env.DEPLOYMENT_SERVER_PASS }}" \
                 -d '{"version":"${{ steps.release.outputs.version }}","git_url":"git://github.com/${{ github.repository }}.git"}'
