@@ -10,7 +10,8 @@ create table project (
     pip_package_name text,
     pip_index_url text,
     pip_index_user text,
-    pip_index_auth text
+    pip_index_auth text,
+    systemd_units jsonb
 );
 
 
@@ -21,12 +22,12 @@ create table deployment (
     removed_at timestamp with time zone,
     project_rid text references project (rid) on delete cascade,
     version text not null,
-    git_branch text,
-    is_fresh bool default true
+    mode text,
+    scheduled_to_run_at timestamp with time zone
 );
 
 
-create type deployment_status as enum ('CREATED', 'RUNNING', 'FAILED', 'SUCCESS');
+create type deployment_status as enum ('SCHEDULED', 'READY', 'RUNNING', 'FAILED', 'SUCCESS');
 -- to add more values later:
 -- alter type deployment_status add value 'orange' after 'failed';
 

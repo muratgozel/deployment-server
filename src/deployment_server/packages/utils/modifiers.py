@@ -1,7 +1,7 @@
 from urllib.parse import urlparse, urlunparse
 
 
-def add_auth(url: str, password: str = None, user: str = None):
+def add_auth_to_url(url: str, password: str = None, user: str = None):
     parsed_url = urlparse(url)
     netloc_with_auth = (
         (user + ":" if user else "")

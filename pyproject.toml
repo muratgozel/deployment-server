@@ -66,9 +66,14 @@ features = [
 ]
 
 [tool.hatch.envs.dev.scripts]
-test = "pytest {args}"
+test = "APPLICATION_MODE=testing pytest {args}"
 test-cov = "pytest --cov-report=term-missing --cov={args}"
 migrate = "dbmate --wait -d src/deployment_server/db/migrations/ up"
+
+[tool.hatch.envs.dev.env-vars]
+APPLICATION_CONFIG_DIR = "~/deployment-server-25"
+APPLICATION_MODE = "default"
+APPLICATION_SERVER_PORT = "8000"
 
 [tool.hatch.envs.types]
 extra-dependencies = [

@@ -24,34 +24,44 @@ jobs:
     release:
         runs-on: ubuntu-24.04
         steps:
-            - name: setup python
+            - name: Install python
               uses: actions/setup-python@v4
               with:
                 python-version: ${{ env.PYTHON_VERSION }}
-            - uses: actions/checkout@v4
+            - name: Install hatch
+              run: pip install hatch
+            - name: Checkout repository
+              uses: actions/checkout@v4
               with:
                 fetch-depth: 0
-            - name: install hatch
-              run: pip install hatch
-            - name: test
-              run: hatch run dev:test tests/utils # NOTE: tests that includes database connections excluded
-            - name: release
+            - name: Run tests
+              run: hatch run dev:APPLICATION_CONFIG_DIR=./config test tests/utils # NOTE: tests that includes database connections excluded
+            - name: Create a git release tag
               id: release
               uses: cocogitto/cocogitto-action@v3
               with:
                 release: true
                 git-user: 'Murat Gözel'
                 git-user-email: 'murat@gozel.com.tr'
-            - name: print version
+            - name: Print git release tag
               run: "echo '${{ steps.release.outputs.version }}'"
-            - name: Create GitHub Release
+            - name: Create github release
               if: steps.release.outputs.version != ''
               run: |
                 gh release create ${{ steps.release.outputs.version }} \
-                  --title "Release ${{ steps.release.outputs.version }}" \
+                  --title "${{ steps.release.outputs.version }}" \
                   --generate-notes \
                   --latest
-            - name: build
+            - name: Build package
+              if: steps.release.outputs.version != ''
               run: "hatch build -c"
-            - name: publish
+            - name: Publish package
+              if: steps.release.outputs.version != ''
               run: "hatch publish --user '${{ env.PYPI_USER }}' --auth '${{ env.PYPI_AUTH }}' --repo '${{ env.PYPI_INDEX_URL }}'"
+            - name: Trigger deploy
+              if: secrets.DEPLOYMENT_SERVER_URL != ''
+              run: |
+                curl -X POST "${{ secrets.DEPLOYMENT_SERVER_URL }}" \
+                -H "Content-Type: application/json" \
+                -u "${{ secrets.DEPLOYMENT_SERVER_USER }}:${{ secrets.DEPLOYMENT_SERVER_PASS }}" \
+                -d '{"version":"${{ steps.release.outputs.version }}","git_url":"git://github.com/${{ github.repository }}.git"}'

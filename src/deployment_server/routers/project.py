@@ -3,25 +3,24 @@ from typing import Annotated
 from dependency_injector import providers
 from dependency_injector.wiring import Provide, inject
 from pydantic import BaseModel, Field, AfterValidator
-from fastapi import APIRouter, HTTPException, Response, Request, Header, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from starlette.responses import PlainTextResponse
 from deployment_server.models import Project
 from deployment_server.services.project import ProjectService
 from deployment_server.containers import ServerContainer
-from deployment_server.utils import converters, validators
-
+from deployment_server.packages.utils import converters, validators
 
 ProjectRid = Annotated[str, Field(max_length=64, min_length=1)]
-ProjectService = Annotated[
-    ProjectService, Depends(Provide[ServerContainer.server.project_service])
+ProjectServiceType = Annotated[
+    ProjectService, Depends(Provide[ServerContainer.project_service])
 ]
 
 
 security = HTTPBasic()
 AuthCredentials = Annotated[HTTPBasicCredentials, Depends(security)]
 AuthConfig = Annotated[
-    providers.Configuration, Depends(Provide[ServerContainer.server.config])
+    providers.Configuration, Depends(Provide[ServerContainer.config])
 ]
 
 
@@ -50,15 +49,11 @@ router = APIRouter(
 class ProjectCreateRequestBody(BaseModel):
     name: Annotated[str, Field(max_length=64, min_length=1)]
     code: Annotated[str | None, Field(max_length=64, min_length=1, default=None)] = None
-    git_url: Annotated[str | None, AfterValidator(validators.validate_url_pydantic)] = (
-        None
-    )
+    git_url: Annotated[str | None, AfterValidator(validators.url_pydantic)] = None
     pip_package_name: Annotated[
-        str | None, AfterValidator(validators.validate_pip_package_name_pydantic)
+        str | None, AfterValidator(validators.pip_package_name_pydantic)
     ] = None
-    pip_index_url: Annotated[
-        str | None, AfterValidator(validators.validate_url_pydantic)
-    ] = None
+    pip_index_url: Annotated[str | None, AfterValidator(validators.url_pydantic)] = None
     pip_index_user: Annotated[str | None, Field(max_length=64, min_length=1)] = None
     pip_index_auth: Annotated[str | None, Field(max_length=64, min_length=1)] = None
 
@@ -69,7 +64,7 @@ ProjectModel = converters.sqlalchemy_to_pydantic(Project, "ProjectModel")
 @router.post("/", response_model=ProjectModel, operation_id="project_create")
 @inject
 async def project_create(
-    body: ProjectCreateRequestBody, project_service: ProjectService
+    body: ProjectCreateRequestBody, project_service: ProjectServiceType
 ):
     code = project_service.validate_code(body.code or body.name)
     if len(code) == 0:
@@ -93,20 +88,15 @@ async def project_create(
     return new_project
 
 
-ProjectService: Annotated[
-    ProjectService, Depends(Provide[ServerContainer.server.project_service])
-]
-
-
 @router.get("/list", response_model=list[ProjectModel], operation_id="project_list")
 @inject
-async def project_list(project_service: ProjectService):
+async def project_list(project_service: ProjectServiceType):
     return await project_service.get_all()
 
 
 @router.get("/{rid}", response_model=ProjectModel, operation_id="project_get")
 @inject
-async def project_get(rid: ProjectRid, project_service: ProjectService):
+async def project_get(rid: ProjectRid, project_service: ProjectServiceType):
     project = await project_service.get_by_rid(rid)
     if project is None:
         raise HTTPException(
@@ -123,7 +113,7 @@ class ProjectRemoveResponse(BaseModel):
     "/{rid}", response_class=PlainTextResponse, operation_id="project_remove"
 )
 @inject
-async def project_remove(rid: ProjectRid, project_service: ProjectService):
+async def project_remove(rid: ProjectRid, project_service: ProjectServiceType):
     project = await project_service.get_by_rid(rid)
     if project is None:
         raise HTTPException(

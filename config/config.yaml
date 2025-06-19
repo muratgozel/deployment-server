@@ -1,0 +1,8 @@
+codename: "deployment-server-25"
+debug: "${DEBUG:1}"
+pg_conn_str: "${PG_CONN_STR}"
+api_user: "${API_USER}"
+api_secret: "${API_SECRET}"
+postmark_server_token: "${POSTMARK_SERVER_TOKEN}"
+postmark_from: "Deployment Server Testing <os-testing@gozel.com.tr>"
+rabbitmq_conn_str: "${RABBITMQ_CONN_STR}"

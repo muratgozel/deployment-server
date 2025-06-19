@@ -1,13 +1,17 @@
 import os
 import logging
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Generator
 from pathlib import Path
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from dependency_injector import containers, providers
 from postmarker.core import PostmarkClient
 from deployment_server.repositories.project import ProjectRepository
 from deployment_server.services.project import ProjectService
+from deployment_server.repositories.deployment import DeploymentRepository
+from deployment_server.services.deployment import DeploymentService
 
 
 def init_logging(name: str, debug: bool = False):
@@ -22,11 +26,6 @@ def init_logging(name: str, debug: bool = False):
     yield logger
 
     # cleanup
-
-
-class Core(containers.DeclarativeContainer):
-    config = providers.Configuration(strict=True)
-    logger = providers.Resource(init_logging, name=config.name, debug=config.debug)
 
 
 async def create_session_factory(conn_str: str):
@@ -46,29 +45,31 @@ async def create_session_factory(conn_str: str):
     await engine.dispose()
 
 
-class ServerGateways(containers.DeclarativeContainer):
-    config = providers.Configuration(strict=True)
-    postmark = PostmarkClient(server_token=config.postmark_server_token)
-    session_factory = providers.Resource(
-        create_session_factory, conn_str=config.pg_conn_str
-    )
+def create_session_factory_sync(conn_str: str):
+    engine = create_engine(conn_str)
+    SessionLocal = sessionmaker(engine, expire_on_commit=False)
+
+    @contextmanager
+    def get_session() -> Generator[Session, None, None]:
+        session = SessionLocal()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    yield get_session
+
+    engine.dispose()
 
 
-class Server(containers.DeclarativeContainer):
-    config = providers.Configuration(strict=True)
-    gateways = providers.DependenciesContainer()
-    project_repo = providers.Factory(
-        ProjectRepository, session_factory=gateways.session_factory
-    )
-    project_service = providers.Factory(ProjectService, project_repo=project_repo)
-
-
-def find_yaml_files() -> list[str | Path]:
+def find_yaml_files(service_name: str) -> list[str | Path]:
     config_dir = Path(os.environ.get("APPLICATION_CONFIG_DIR"))
     os.makedirs(config_dir.as_posix(), exist_ok=True)
     config_file_names_to_load = (
         "config.yaml",
         f"config_{os.environ.get('APPLICATION_MODE')}.yaml",
+        f"config_{service_name}.yaml",
+        f"config_{os.environ.get('APPLICATION_MODE')}_{service_name}.yaml",
     )
     yaml_files = [
         config_dir / name
@@ -84,9 +85,41 @@ def find_yaml_files() -> list[str | Path]:
 
 class ServerContainer(containers.DeclarativeContainer):
     wiring_config = containers.WiringConfiguration(
-        modules=["deployment_server.routers.project"]
+        modules=[
+            "deployment_server.routers.project",
+            "deployment_server.routers.deployment",
+        ]
     )
-    config = providers.Configuration(yaml_files=find_yaml_files(), strict=True)
-    core = providers.Container(Core, config=config.core)
-    gateways = providers.Container(ServerGateways, config=config.server_gateways)
-    server = providers.Container(Server, config=config.server, gateways=gateways)
+    config = providers.Configuration(yaml_files=find_yaml_files("server"), strict=True)
+    logger = providers.Resource(init_logging, name=config.name, debug=config.debug)
+    session_factory = providers.Resource(
+        create_session_factory, conn_str=config.pg_conn_str
+    )
+    project_repo = providers.Factory(ProjectRepository, session_factory=session_factory)
+    project_service = providers.Factory(ProjectService, project_repo=project_repo)
+    deployment_repo = providers.Factory(
+        DeploymentRepository, session_factory=session_factory
+    )
+    deployment_service = providers.Factory(
+        DeploymentService, deployment_repo=deployment_repo
+    )
+
+
+class WorkerContainer(containers.DeclarativeContainer):
+    wiring_config = containers.WiringConfiguration(
+        packages=["deployment_server.packages.deployer"]
+    )
+    config = providers.Configuration(yaml_files=find_yaml_files("worker"), strict=True)
+    logger = providers.Resource(init_logging, name=config.name, debug=config.debug)
+    session_factory = providers.Resource(
+        create_session_factory, conn_str=config.pg_conn_str
+    )
+    postmark = PostmarkClient(server_token=config.postmark_server_token)
+    project_repo = providers.Factory(ProjectRepository, session_factory=session_factory)
+    project_service = providers.Factory(ProjectService, project_repo=project_repo)
+    deployment_repo = providers.Factory(
+        DeploymentRepository, session_factory=session_factory
+    )
+    deployment_service = providers.Factory(
+        DeploymentService, deployment_repo=deployment_repo
+    )

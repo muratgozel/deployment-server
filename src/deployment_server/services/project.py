@@ -11,10 +11,13 @@ class ProjectService:
         return await self.project_repo.get_all()
 
     async def get_by_code(self, code: str):
-        return await self.project_repo.get_by_code(code)
+        return await self.project_repo.get_one_by("code", code)
 
     async def get_by_rid(self, rid: str):
-        return await self.project_repo.get_by_rid(rid)
+        return await self.project_repo.get_one_by("rid", rid)
+
+    async def get_by_git_url(self, git_url: str):
+        return await self.project_repo.get_one_by("git_url", git_url)
 
     def validate_code(self, code: str) -> str | bool:
         validated_code = slugify(code)

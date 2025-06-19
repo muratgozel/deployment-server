@@ -3,7 +3,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 
-def extract_info_from_repo_url(repo_url: str):
+def information_from_git_repo_url(repo_url: str):
     """
     Extracts vendor, owner and repository name from a given repository url.
 
@@ -32,7 +32,7 @@ def extract_info_from_repo_url(repo_url: str):
     return vendor, owner, name
 
 
-def extract_tag_from_ref(ref: str) -> str:
+def tag_from_git_ref(ref: str) -> str:
     """
     Extracts version string from git reference.
     refs/tags/0.1.2 -> 0.1.2

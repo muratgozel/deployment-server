@@ -1,4 +1,4 @@
-from deployment_server.utils import url_extra
+from deployment_server.packages.utils.modifiers import add_auth_to_url
 
 
 def test_add_auth():
@@ -31,7 +31,7 @@ def test_add_auth():
 
     for sample in samples:
         assert (
-            url_extra.add_auth(
+            add_auth_to_url(
                 sample[0], password=sample[1] or None, user=sample[2] or None
             )
             == sample[3]

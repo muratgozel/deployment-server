@@ -1,12 +1,24 @@
 import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient, BasicAuth
 from sqlalchemy import text
-from deployment_server.server import create_app
 
 
-@pytest.mark.asyncio
-async def test_project():
-    app = create_app()
+@pytest_asyncio.fixture(autouse=True, scope="module", loop_scope="session")
+async def setup_project(get_app):
+    app = get_app
+    session_factory = await app.container.session_factory()
+
+    yield
+
+    async with session_factory() as session:
+        await session.execute(text("delete from project where removed_at is not null"))
+        await session.commit()
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_project(get_app):
+    app = get_app
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test", follow_redirects=True
@@ -25,8 +37,8 @@ async def test_project():
             "pip_index_auth": "pass",
         }
         auth = BasicAuth(
-            username=app.container.config.server.api_user(),
-            password=app.container.config.server.api_secret(),
+            username=app.container.config.api_user(),
+            password=app.container.config.api_secret(),
         )
         response2 = await client.post(
             "/project", json=body_valid, headers=headers, auth=auth
@@ -44,15 +56,10 @@ async def test_project():
         assert response_list.status_code == 200
         response_list_dict = response_list.json()
         assert isinstance(response_list_dict, list)
-        assert response_list_dict[0]["rid"] == response2_dict["rid"]
+        filtered = [x for x in response_list_dict if x["rid"] == response2_dict["rid"]]
+        assert len(filtered) == 1
 
         response_remove = await client.delete(
             f"/project/{response2_dict['rid']}", auth=auth
         )
         assert response_remove.status_code == 204
-
-    # cleanup
-    session_factory = await app.container.gateways.session_factory()
-    async with session_factory() as session:
-        await session.execute(text("delete from project where removed_at is not null"))
-        await session.commit()

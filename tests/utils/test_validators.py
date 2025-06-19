@@ -1,4 +1,4 @@
-from deployment_server.utils import validators
+from deployment_server.packages.utils.validators import url
 
 
 def test_validate():
@@ -16,8 +16,7 @@ def test_validate():
     invalid_samples = (None, "", "git://git://github.com/coldrune/server.git")
 
     for sample in valid_samples:
-        assert validators.validate_url(sample)[0] == True
+        assert url(sample)[0] == True
 
     for sample in invalid_samples:
-        print(sample)
-        assert validators.validate_url(sample)[0] == False
+        assert url(sample)[0] == False

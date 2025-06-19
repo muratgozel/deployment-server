@@ -1,8 +1,9 @@
 import enum
 import nanoid
-from typing import Optional
+from typing import Optional, Any
 from datetime import datetime, timezone
-from sqlalchemy import String, ForeignKey, Enum, TIMESTAMP, Boolean
+from sqlalchemy import String, ForeignKey, Enum, TIMESTAMP
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -46,6 +47,7 @@ class Project(ModelBase):
     pip_index_url: Mapped[Optional[str]] = mapped_column(String)
     pip_index_user: Mapped[Optional[str]] = mapped_column(String)
     pip_index_auth: Mapped[Optional[str]] = mapped_column(String)
+    systemd_units: Mapped[Optional[list[dict[str, Any]]]] = mapped_column(JSONB)
 
     deployments: Mapped[list["Deployment"]] = relationship(
         back_populates="project", lazy="selectin"
@@ -57,8 +59,10 @@ class Deployment(ModelBase):
     rid: Mapped[str]
 
     version: Mapped[str] = mapped_column(String)
-    is_fresh: Mapped[bool] = mapped_column(Boolean, default=True)
-    git_branch: Mapped[str] = mapped_column(String)
+    mode: Mapped[Optional[str]] = mapped_column(String)
+    scheduled_to_run_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True)
+    )
     project_rid: Mapped[str] = mapped_column(
         String, ForeignKey("project.rid", ondelete="CASCADE")
     )
@@ -72,7 +76,8 @@ class Deployment(ModelBase):
 
 
 class DeploymentStatus(enum.Enum):
-    CREATED = "CREATED"
+    SCHEDULED = "SCHEDULED"
+    READY = "READY"
     RUNNING = "RUNNING"
     FAILED = "FAILED"
     SUCCESS = "SUCCESS"

@@ -2,6 +2,12 @@ import re
 from urllib.parse import urlparse
 
 
+def url_pydantic(value: str):
+    if url(value)[0] is False:
+        raise ValueError("invalid url")
+    return value.lower()
+
+
 ul = "\u00a1-\uffff"
 ipv4_re = (
     r"(?:0|25[0-5]|2[0-4][0-9]|1[0-9]?[0-9]?|[1-9][0-9]?)"
@@ -21,19 +27,13 @@ tld_re = tld_no_fqdn_re + r"\.?"
 host_re = "(" + hostname_re + domain_re + tld_re + "|localhost)"
 
 
-def validate_url_pydantic(url: str):
-    if validate_url(url)[0] is False:
-        raise ValueError("invalid url")
-    return url.lower()
-
-
-def validate_url(
-    url: str,
+def url(
+    value: str,
     required_attrs: str = ("scheme", "netloc", "path"),
     scheme_whitelist: tuple[str] = ("https", "http", "git"),
 ):
     try:
-        tokens = urlparse(url)
+        tokens = urlparse(value)
     except Exception as ex:
         return False, f"urlparse error: {str(ex)}"
 
@@ -64,13 +64,13 @@ def validate_url(
     return True, ""
 
 
-def validate_pip_package_name_pydantic(name: str):
-    if validate_pip_package_name(name) is True:
+def pip_package_name_pydantic(name: str):
+    if pip_package_name(name) is True:
         return normalize_pip_package_name(name)
     raise ValueError("invalid package name")
 
 
-def validate_pip_package_name(name: str):
+def pip_package_name(name: str):
     matches = re.match(
         f"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", name, re.IGNORECASE
     )
@@ -79,3 +79,56 @@ def validate_pip_package_name(name: str):
 
 def normalize_pip_package_name(name: str):
     return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def deployment_mode_pydantic(name: str):
+    if deployment_mode(name) is False:
+        raise ValueError("invalid deployment mode")
+    return name.lower()
+
+
+deployment_mode_allowed_chars = tuple(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+)
+
+
+def deployment_mode(name: str):
+    if isinstance(name, str):
+        try:
+            encoded = name.encode("utf-8")
+            decoded = encoded.decode("utf-8")
+            result = decoded == name
+            if result and all(char in deployment_mode_allowed_chars for char in name):
+                return True
+        except UnicodeError:
+            return False
+    return False
+
+
+def project_name_pydantic(name: str):
+    if project_name(name) is False:
+        raise ValueError("invalid project name")
+    return name.lower()
+
+
+project_name_allowed_chars = tuple(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-0123456789"
+)
+
+
+def project_name(name: str):
+    if isinstance(name, str):
+        try:
+            encoded = name.encode("utf-8")
+            decoded = encoded.decode("utf-8")
+            result = decoded == name
+            if (
+                result
+                and all(char in deployment_mode_allowed_chars for char in name)
+                and not name.startswith(("_", "-"))
+                and not name.endswith(("-", "_"))
+            ):
+                return True
+        except UnicodeError:
+            return False
+    return False

@@ -15,7 +15,7 @@ WantedBy=sockets.target
 """
 
 
-def generate_socket(name: str, port: str | int):
+def systemd_socket(name: str, port: str | int):
     template = jinja2.Environment(
         loader=jinja2.BaseLoader(), keep_trailing_newline=True, lstrip_blocks=True
     ).from_string(template_socket)
@@ -65,20 +65,8 @@ WantedBy=multi-user.target
 """
 
 
-def generate_service(name: str, user: str, group: str):
+def systemd_service(name: str, user: str, group: str):
     template = jinja2.Environment(
         loader=jinja2.BaseLoader(), keep_trailing_newline=True, lstrip_blocks=True
     ).from_string(template_service)
     return template.render(name=name, user=user, group=group)
-
-
-def write(file: str, content: str):
-    try:
-        with open(file, "w") as f:
-            try:
-                f.write(content)
-                return True, "file saved successfully."
-            except (IOError, OSError):
-                return False, f"failed to write to file. file: {file}"
-    except (FileNotFoundError, PermissionError, OSError):
-        return False, f"failed to open file for writing. file: {file}"

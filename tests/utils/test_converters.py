@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
-from deployment_server.utils.converters import sqlalchemy_to_pydantic
+from deployment_server.packages.utils.converters import sqlalchemy_to_pydantic
 from deployment_server.models import ModelBase
 
 

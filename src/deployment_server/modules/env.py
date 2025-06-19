@@ -1,6 +1,18 @@
 import os
 
 
+def get_mode_fallback():
+    return "default"
+
+
+def get_config_dir_fallback():
+    return "./"
+
+
+def get_port_fallback():
+    return "8000"
+
+
 def is_dev():
     mode = os.environ.get("APPLICATION_MODE")
     if "dev" in mode or "local" in mode or "development" in mode or "default" in mode:
