@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.2.0](https://github.com/muratgozel/deployment-server/compare/99d3a267b949e2c4b41ae65d495a40d17938e411..0.2.0) - 2025-06-19
+#### Continuous Integration
+- github workflow file syntax fix - ([aee6ba7](https://github.com/muratgozel/deployment-server/commit/aee6ba70cde136b51d341ba31a5e74c065a41e12)) - Murat Gözel
+#### Features
+- deployment requests - ([99d3a26](https://github.com/muratgozel/deployment-server/commit/99d3a267b949e2c4b41ae65d495a40d17938e411)) - Murat Gözel
+
+- - -
+
 ## [0.1.2](https://github.com/muratgozel/deployment-server/compare/1818d92e5af1ab074207f7ecbec4ebc68e25ae79..0.1.2) - 2025-06-16
 #### Bug Fixes
 - test releasing - ([9ac2f62](https://github.com/muratgozel/deployment-server/commit/9ac2f62e71badf1d5d769a23ac25f568c62ef533)) - Murat Gözel
