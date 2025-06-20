@@ -23,10 +23,18 @@ class DeploymentService:
     async def pick_deployment(self):
         return await self.deployment_repo.pick_deployment()
 
+    def pick_deployment_sync(self):
+        return self.deployment_repo.pick_deployment_sync()
+
     async def send_status_update(
         self, status_rid: str, value: DeploymentStatus, description: str = None
     ):
         return await self.deployment_repo.status_update(status_rid, value, description)
+
+    def send_status_update_sync(
+        self, status_rid: str, value: DeploymentStatus, description: str = None
+    ):
+        return self.deployment_repo.status_update_sync(status_rid, value, description)
 
     async def get_all(self):
         return await self.deployment_repo.get_all()

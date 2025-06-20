@@ -13,6 +13,9 @@ class ProjectService:
     async def get_by_code(self, code: str):
         return await self.project_repo.get_one_by("code", code)
 
+    def get_by_code_sync(self, code: str):
+        return self.project_repo.get_one_by_sync("code", code)
+
     async def get_by_rid(self, rid: str):
         return await self.project_repo.get_one_by("rid", rid)
 

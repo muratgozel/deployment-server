@@ -14,18 +14,18 @@ DeploymentServiceType = Annotated[
 ]
 
 
-@shared_task
+@shared_task()
 @inject
-async def run_deployment(
+def run_deployment(
     project_service: ProjectServiceType, deployment_service: DeploymentServiceType
 ):
-    rec = await deployment_service.pick_deployment()
+    rec = deployment_service.pick_deployment_sync()
     if rec is None:
         return
 
-    await deployment_service.send_status_update(rec.rid, DeploymentStatus.RUNNING)
+    deployment_service.send_status_update_sync(rec.rid, DeploymentStatus.RUNNING)
 
-    project = await project_service.get_by_code(rec.project_code)
+    project = project_service.get_by_code_sync(rec.project_code)
 
     mode = rec.mode or "default"
     success, message = deployer.deploy(
@@ -39,9 +39,9 @@ async def run_deployment(
     )
     if not success:
         deployer.logger.error(message)
-        await deployment_service.send_status_update(rec.rid, DeploymentStatus.FAILED)
+        deployment_service.send_status_update_sync(rec.rid, DeploymentStatus.FAILED)
         return False
 
-    await deployment_service.send_status_update(rec.rid, DeploymentStatus.SUCCESS)
+    deployment_service.send_status_update_sync(rec.rid, DeploymentStatus.SUCCESS)
 
     return True

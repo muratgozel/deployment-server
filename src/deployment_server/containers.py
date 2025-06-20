@@ -91,7 +91,7 @@ class ServerContainer(containers.DeclarativeContainer):
         ]
     )
     config = providers.Configuration(yaml_files=find_yaml_files("server"), strict=True)
-    logger = providers.Resource(init_logging, name=config.name, debug=config.debug)
+    logger = providers.Resource(init_logging, name=config.codename, debug=config.debug)
     session_factory = providers.Resource(
         create_session_factory, conn_str=config.pg_conn_str
     )
@@ -107,12 +107,13 @@ class ServerContainer(containers.DeclarativeContainer):
 
 class WorkerContainer(containers.DeclarativeContainer):
     wiring_config = containers.WiringConfiguration(
-        packages=["deployment_server.packages.deployer"]
+        packages=["deployment_server.packages.deployer"],
+        modules=["deployment_server.tasks.run_deployment"],
     )
     config = providers.Configuration(yaml_files=find_yaml_files("worker"), strict=True)
-    logger = providers.Resource(init_logging, name=config.name, debug=config.debug)
+    logger = providers.Resource(init_logging, name=config.codename, debug=config.debug)
     session_factory = providers.Resource(
-        create_session_factory, conn_str=config.pg_conn_str
+        create_session_factory_sync, conn_str=config.pg_conn_str
     )
     postmark = PostmarkClient(server_token=config.postmark_server_token)
     project_repo = providers.Factory(ProjectRepository, session_factory=session_factory)

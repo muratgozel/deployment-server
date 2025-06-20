@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
-from typing import Callable, AsyncContextManager
+from typing import Callable, AsyncContextManager, ContextManager
 from sqlalchemy import select, update, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from deployment_server.models import (
     Deployment,
     DeploymentStatusUpdate,
@@ -21,7 +22,11 @@ class LatestStatusType:
 
 class DeploymentRepository:
     def __init__(
-        self, session_factory: Callable[[], AsyncContextManager[AsyncSession]]
+        self,
+        session_factory: (
+            Callable[[], AsyncContextManager[AsyncSession]]
+            | Callable[[], ContextManager[Session]]
+        ),
     ):
         self.session_factory = session_factory
 
@@ -79,6 +84,18 @@ class DeploymentRepository:
             result = await session.scalars(statement)
             return result.first()
 
+    def pick_deployment_sync(self) -> LatestStatusType | None:
+        with self.session_factory() as session:
+            inner_statement = self.get_statement_latest_statuses()
+            subquery = inner_statement.subquery()
+            statement = (
+                select(subquery)
+                .where(subquery.c.status == DeploymentStatus.READY)
+                .limit(1)
+            )
+            result = session.scalars(statement)
+            return result.first()
+
     async def status_update(
         self, status_rid: str, value: DeploymentStatus, description: str = None
     ):
@@ -91,6 +108,21 @@ class DeploymentRepository:
             result = await session.execute(statement)
             if result.rowcount == 1:
                 await session.commit()
+                return True
+            return False
+
+    def status_update_sync(
+        self, status_rid: str, value: DeploymentStatus, description: str = None
+    ):
+        with self.session_factory() as session:
+            statement = (
+                update(DeploymentStatusUpdate)
+                .where(DeploymentStatusUpdate.rid == status_rid)
+                .values(status=value, description=description)
+            )
+            result = session.execute(statement)
+            if result.rowcount == 1:
+                session.commit()
                 return True
             return False
 
