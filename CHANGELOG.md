@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.2.1](https://github.com/muratgozel/deployment-server/compare/33f6085a93e4b25d440cbee6b54d5aff30d17f0d..0.2.1) - 2025-06-20
+#### Bug Fixes
+- made celery tasks sync - ([33f6085](https://github.com/muratgozel/deployment-server/commit/33f6085a93e4b25d440cbee6b54d5aff30d17f0d)) - Murat Gözel
+
+- - -
+
 ## [0.2.0](https://github.com/muratgozel/deployment-server/compare/99d3a267b949e2c4b41ae65d495a40d17938e411..0.2.0) - 2025-06-19
 #### Continuous Integration
 - github workflow file syntax fix - ([aee6ba7](https://github.com/muratgozel/deployment-server/commit/aee6ba70cde136b51d341ba31a5e74c065a41e12)) - Murat Gözel
