@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, AfterValidator
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from starlette.responses import PlainTextResponse
-from deployment_server.models import Project
+from deployment_server.models import Project, SystemdUnit
 from deployment_server.services.project import ProjectService
 from deployment_server.containers import ServerContainer
 from deployment_server.packages.utils import converters, validators
@@ -56,6 +56,7 @@ class ProjectCreateRequestBody(BaseModel):
     pip_index_url: Annotated[str | None, AfterValidator(validators.url_pydantic)] = None
     pip_index_user: Annotated[str | None, Field(max_length=64, min_length=1)] = None
     pip_index_auth: Annotated[str | None, Field(max_length=64, min_length=1)] = None
+    systemd_units: Annotated[list[SystemdUnit] | None, Field(default=None)] = None
 
 
 ProjectModel = converters.sqlalchemy_to_pydantic(Project, "ProjectModel")
@@ -84,6 +85,7 @@ async def project_create(
         pip_index_url=body.pip_index_url,
         pip_index_user=body.pip_index_user,
         pip_index_auth=body.pip_index_auth,
+        daemons=body.systemd_units,
     )
     return new_project
 

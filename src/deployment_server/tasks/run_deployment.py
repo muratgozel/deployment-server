@@ -31,11 +31,11 @@ def run_deployment(
     success, message = deployer.deploy(
         project_code=rec.project_code,
         mode=mode,
-        systemd_units=project.systemd_units,
         pip_package_name=project.pip_package_name,
         pip_index_url=project.pip_index_url,
         pip_index_user=project.pip_index_user,
         pip_index_auth=project.pip_index_auth,
+        daemons=project.daemons,
     )
     if not success:
         deployer.logger.error(message)

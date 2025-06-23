@@ -1,6 +1,6 @@
 from slugify import slugify
 from deployment_server.repositories.project import ProjectRepository
-from deployment_server.models import Project
+from deployment_server.models import Project, SystemdUnit
 
 
 class ProjectService:
@@ -37,6 +37,7 @@ class ProjectService:
         pip_index_url: str = None,
         pip_index_user: str = None,
         pip_index_auth: str = None,
+        daemons: list[SystemdUnit] = None,
     ):
         project = Project(
             rid=Project.generate_rid(),
@@ -48,7 +49,7 @@ class ProjectService:
             pip_index_user=pip_index_user,
             pip_index_auth=pip_index_auth,
         )
-        return await self.project_repo.add(project=project)
+        return await self.project_repo.add(project=project, daemons=daemons)
 
     async def remove_by_rid(self, rid: str):
         return await self.project_repo.remove_by_rid(rid=rid)

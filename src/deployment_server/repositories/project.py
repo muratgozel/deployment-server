@@ -3,7 +3,7 @@ from typing import Callable, AsyncContextManager, ContextManager
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from deployment_server.models import Project
+from deployment_server.models import Project, SystemdUnit, Daemon, DaemonType
 
 
 class ProjectRepository:
@@ -52,9 +52,24 @@ class ProjectRepository:
                 f"multiple projects found with the same project {column_name}."
             )
 
-    async def add(self, project: Project) -> Project:
+    async def add(self, project: Project, daemons: list[SystemdUnit] = None) -> Project:
         async with self.session_factory() as session:
             session.add(project)
+
+            if isinstance(daemons, list) and len(daemons) > 0:
+                daemons = [
+                    Daemon(
+                        rid=Daemon.generate_rid(),
+                        type=DaemonType.SYSTEMD,
+                        project_rid=project.rid,
+                        name=d.name,
+                        port=d.port or None,
+                        py_module_name=d.py_module_name or None,
+                    )
+                    for d in daemons
+                ]
+                session.add_all(daemons)
+
             await session.commit()
             return project
 

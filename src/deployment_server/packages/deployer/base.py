@@ -8,9 +8,31 @@ from typing import Any
 from logging import Logger
 from pathlib import Path
 from typing import Annotated
+from dependency_injector import containers, providers
 from dependency_injector.wiring import Provide
 from deployment_server.containers import WorkerContainer
+from deployment_server.models import Daemon, DaemonType
 from deployment_server.packages.utils import modifiers, generators
+
+
+def find_yaml_files(service_name: str) -> list[str | Path]:
+    config_dir = Path(os.environ.get("APPLICATION_CONFIG_DIR"))
+    config_file_names_to_load = (
+        "config.yaml",
+        f"config_{os.environ.get('APPLICATION_MODE')}.yaml",
+        f"config_{service_name}.yaml",
+        f"config_{os.environ.get('APPLICATION_MODE')}_{service_name}.yaml",
+    )
+    yaml_files = [
+        config_dir / name
+        for name in config_file_names_to_load
+        if (config_dir / name).exists()
+    ]
+    return yaml_files
+
+
+class Container(containers.DeclarativeContainer):
+    config = providers.Configuration(strict=True)
 
 
 class Deployer:
@@ -26,11 +48,11 @@ class Deployer:
         self,
         project_code: str,
         mode: str,
-        systemd_units: list[dict[str, Any]] = (),
         pip_package_name: str = None,
         pip_index_url: str = None,
         pip_index_user: str = None,
         pip_index_auth: str = None,
+        daemons: list[Daemon] = None,
     ):
         try:
             application_dir, os_user, os_groups = self.verify_os_configuration(
@@ -57,65 +79,96 @@ class Deployer:
             except Exception as ex:
                 return False, str(ex)
 
+        os.environ["APPLICATION_MODE"] = mode
+        os.environ["APPLICATION_CONFIG_DIR"] = (self.user_root_dir / os_user).as_posix()
+        container = Container()
+        container.config.set_yaml_files(files=find_yaml_files("deploy"))
+        container.config.load()
+
         try:
-            self.run_database_migrations(db_migrations_root_dir)
+            self.run_database_migrations(
+                db_migrations_root_dir, container.config.deploy.pg_conn_str()
+            )
         except Exception as ex:
             return False, str(ex)
 
-        if len(systemd_units) > 0:
-            self.setup_systemd_units(systemd_units, os_user, os_groups[0])
+        if daemons is not None and len(daemons) > 0:
+            systemd_units = [d for d in daemons if d.type == DaemonType.SYSTEMD]
+            if len(systemd_units) > 0:
+                self.setup_systemd_units(systemd_units, os_user, os_groups[0])
 
         return True, ""
 
-    def setup_systemd_units(
-        self, units: list[dict[str, Any]], os_user: str, os_group: str
-    ):
-        new_sockets = existing_sockets = new_services = existing_services = []
-        for unit in units:
-            unit_name = unit["name"]
-            unit_port = unit["port"]
-            socket_file_name = f"{unit_name}.socket"
-            service_file_name = f"{unit_name}.service"
-            socket_file_path = self.systemd_root_dir / socket_file_name
-            service_file_path = self.systemd_root_dir / service_file_name
-
-            if not socket_file_path.exists():
-                socket_content = generators.systemd_socket(unit_name, unit_port)
-                success, message = self.write_file(socket_file_path, socket_content)
-                if not success:
-                    raise ValueError(
-                        f"failed to write systemd socket {socket_file_name}. error: {message}"
+    def setup_systemd_units(self, daemons: list[Daemon], os_user: str, os_group: str):
+        new_sockets = new_socket_services = new_services = existing_sockets = (
+            existing_socket_services
+        ) = existing_services = []
+        for d in daemons:
+            if d.type == DaemonType.DOCKER:
+                continue
+            if d.port:
+                socket_file_name = f"{d.name}.socket"
+                service_file_name = f"{d.name}.service"
+                socket_file_path = self.systemd_root_dir / socket_file_name
+                service_file_path = self.systemd_root_dir / service_file_name
+                service_content, socket_content = (
+                    generators.systemd_service_with_socket(
+                        d.name, os_user, os_group, d.py_module_name, d.port
                     )
-                new_sockets.append(unit_name)
-            else:
-                existing_sockets.append(unit_name)
-
-            if not service_file_path.exists():
-                service_content = generators.systemd_service(
-                    unit_name, os_user, os_group
                 )
-                success, message = self.write_file(service_file_path, service_content)
-                if not success:
-                    raise ValueError(
-                        f"failed to write systemd service {service_file_name}. error: {message}"
+                if not socket_file_path.exists():
+                    success, message = self.write_file(socket_file_path, socket_content)
+                    if not success:
+                        raise ValueError(
+                            f"failed to write systemd socket {socket_file_name}. error: {message}"
+                        )
+                    new_sockets.append(d.name)
+                else:
+                    existing_sockets.append(d.name)
+                if not service_file_path.exists():
+                    success, message = self.write_file(
+                        service_file_path, service_content
                     )
-                new_services.append(unit_name)
+                    if not success:
+                        raise ValueError(
+                            f"failed to write systemd service {service_file_name}. error: {message}"
+                        )
+                    new_socket_services.append(d.name)
+                else:
+                    existing_socket_services.append(d.name)
             else:
-                existing_services.append(unit_name)
+                service_file_name = f"{d.name}.service"
+                service_file_path = self.systemd_root_dir / service_file_name
+                service_content = generators.systemd_service(
+                    d.name, os_user, os_group, d.py_module_name
+                )
+                if not service_file_path.exists():
+                    success, message = self.write_file(
+                        service_file_path, service_content
+                    )
+                    if not success:
+                        raise ValueError(
+                            f"failed to write systemd service {service_file_name}. error: {message}"
+                        )
+                    new_services.append(d.name)
+                else:
+                    existing_services.append(d.name)
 
-        if len(new_sockets) > 0:
-            args = ["sudo", "systemctl", "enable", *new_sockets]
+        new_services_combined = [*new_sockets, *new_services]
+
+        if len(new_services_combined) > 0:
+            args = ["sudo", "systemctl", "enable", *new_services_combined]
             result = subprocess.run(args, capture_output=True, text=True)
             if result.returncode != 0:
                 raise ValueError(
                     f"failed to enable new sockets. error: {result.stderr}"
                 )
-            args = ["sudo", "systemctl", "start", *new_sockets]
+            args = ["sudo", "systemctl", "start", *new_services_combined]
             result = subprocess.run(args, capture_output=True, text=True)
             if result.returncode != 0:
                 raise ValueError(f"failed to start new sockets. error: {result.stderr}")
 
-        if len(new_sockets) > 0 or len(new_services) > 0:
+        if len([*new_services_combined, *new_socket_services]) > 0:
             args = ["sudo", "systemctl", "daemon-reload"]
             result = subprocess.run(args, capture_output=True, text=True)
             if result.returncode != 0:
@@ -123,21 +176,31 @@ class Deployer:
                     f"failed to execute daemon-reload. error: {result.stderr}"
                 )
 
-        if len(existing_services) > 0:
-            args = ["sudo", "systemctl", "restart", *existing_services]
+        if len(existing_socket_services) > 0:
+            args = ["sudo", "systemctl", "restart", *existing_socket_services]
             result = subprocess.run(args, capture_output=True, text=True)
             if result.returncode != 0:
-                raise ValueError(f"failed to start new sockets. error: {result.stderr}")
+                raise ValueError(
+                    f"failed to restart existing sockets. error: {result.stderr}"
+                )
+
+        if len(existing_services) > 0:
+            args = ["sudo", "systemctl", "reload", *existing_services]
+            result = subprocess.run(args, capture_output=True, text=True)
+            if result.returncode != 0:
+                raise ValueError(
+                    f"failed to restart existing services. error: {result.stderr}"
+                )
 
         stat = os.system(
-            f"sudo systemctl status --no-pager f{' '.join([*new_sockets, *existing_sockets])}"
+            f"sudo systemctl status --no-pager f{' '.join([*new_sockets, *existing_sockets, *existing_services])}"
         )
         if stat != 0:
             raise ValueError(f"some systemd units aren't running.")
 
         return True
 
-    def run_database_migrations(self, root_dir: Path):
+    def run_database_migrations(self, root_dir: Path, db_conn_str: str):
         db_migrations_dir = root_dir / "db" / "migrations"
         if db_migrations_dir.exists():
             args = [
@@ -149,7 +212,12 @@ class Deployer:
                 db_migrations_dir.as_posix(),
                 "up",
             ]
-            result = subprocess.run(args, capture_output=True, text=True)
+            result = subprocess.run(
+                args,
+                env=dict(os.environ, DATABASE_URL=db_conn_str),
+                capture_output=True,
+                text=True,
+            )
             if result.returncode != 0:
                 raise ValueError(f"failed to run db migrations: {result.stderr}")
         self.logger.info("verified db migrations")
@@ -221,7 +289,7 @@ class Deployer:
     def verify_os_configuration(self, project_code: str, mode: str):
         os_user = project_code
         os_group = project_code
-        os_groups = (os_group, *self.os_groups)
+        os_groups = (*self.os_groups,)
 
         for group in os_groups:
             if not self.is_os_group_exists(group):
@@ -243,6 +311,8 @@ class Deployer:
                     "-m",
                     "-s",
                     "/bin/bash",
+                    "-g",
+                    os_group,
                     "-G",
                     user_groups,
                     os_user,

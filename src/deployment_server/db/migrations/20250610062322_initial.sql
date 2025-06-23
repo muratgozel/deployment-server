@@ -10,8 +10,22 @@ create table project (
     pip_package_name text,
     pip_index_url text,
     pip_index_user text,
-    pip_index_auth text,
-    systemd_units jsonb
+    pip_index_auth text
+);
+
+
+create type daemon_type as enum ('SYSTEMD', 'DOCKER');
+
+create table daemon (
+    rid text not null constraint daemon_pk primary key,
+    created_at timestamp with time zone default now(),
+    updated_at timestamp with time zone,
+    removed_at timestamp with time zone,
+    type daemon_type,
+    project_rid text references project (rid) on delete cascade,
+    name text not null,
+    port int default 0,
+    py_module_name text
 );
 
 

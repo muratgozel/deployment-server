@@ -1,9 +1,9 @@
 import enum
 import nanoid
-from typing import Optional, Any
+from typing import Optional, Annotated
 from datetime import datetime, timezone
-from sqlalchemy import String, ForeignKey, Enum, TIMESTAMP
-from sqlalchemy.dialects.postgresql import JSONB
+from pydantic import BaseModel, Field, AfterValidator
+from sqlalchemy import String, ForeignKey, Enum, TIMESTAMP, Integer
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -13,6 +13,19 @@ from sqlalchemy.orm import (
     declared_attr,
 )
 from sqlalchemy.sql import func
+from deployment_server.packages.utils import validators
+
+
+class SystemdUnit(BaseModel):
+    name: Annotated[
+        str,
+        Field(max_length=64, min_length=1),
+        AfterValidator(validators.pip_package_name_pydantic),
+    ]
+    port: Annotated[int | None, Field(ge=1000, le=9999)] = None
+    py_module_name: Annotated[
+        str | None, AfterValidator(validators.pip_package_name_pydantic)
+    ] = None
 
 
 class ModelBase(AsyncAttrs, DeclarativeBase):
@@ -47,11 +60,33 @@ class Project(ModelBase):
     pip_index_url: Mapped[Optional[str]] = mapped_column(String)
     pip_index_user: Mapped[Optional[str]] = mapped_column(String)
     pip_index_auth: Mapped[Optional[str]] = mapped_column(String)
-    systemd_units: Mapped[Optional[list[dict[str, Any]]]] = mapped_column(JSONB)
 
     deployments: Mapped[list["Deployment"]] = relationship(
         back_populates="project", lazy="selectin"
     )
+    daemons: Mapped[list["Daemon"]] = relationship(
+        back_populates="project", lazy="selectin"
+    )
+
+
+class DaemonType(enum.Enum):
+    SYSTEMD = "SYSTEMD"
+    DOCKER = "DOCKER"
+
+
+class Daemon(ModelBase):
+    __tablename__ = "daemon"
+    rid: Mapped[str]
+
+    type: Mapped[DaemonType] = mapped_column(Enum(DaemonType))
+    name: Mapped[str] = mapped_column(String)
+    port: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    py_module_name: Mapped[Optional[str]] = mapped_column(String)
+    project_rid: Mapped[str] = mapped_column(
+        String, ForeignKey("project.rid", ondelete="CASCADE")
+    )
+
+    project: Mapped["Project"] = relationship(back_populates="daemons", lazy="selectin")
 
 
 class Deployment(ModelBase):
