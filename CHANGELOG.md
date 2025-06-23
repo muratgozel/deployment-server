@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.2.2](https://github.com/muratgozel/deployment-server/compare/fdeeba1c9972e43a92b1ff7e939e2f850b9e503e..0.2.2) - 2025-06-23
+#### Bug Fixes
+- deploy task - ([fdeeba1](https://github.com/muratgozel/deployment-server/commit/fdeeba1c9972e43a92b1ff7e939e2f850b9e503e)) - Murat Gözel
+
+- - -
+
 ## [0.2.1](https://github.com/muratgozel/deployment-server/compare/33f6085a93e4b25d440cbee6b54d5aff30d17f0d..0.2.1) - 2025-06-20
 #### Bug Fixes
 - made celery tasks sync - ([33f6085](https://github.com/muratgozel/deployment-server/commit/33f6085a93e4b25d440cbee6b54d5aff30d17f0d)) - Murat Gözel
