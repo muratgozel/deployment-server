@@ -47,14 +47,35 @@ def create_app() -> FastAPI:
     return app
 
 
+def get_socket_fd():
+    listen_fds = os.environ.get("LISTEN_FDS")
+    listen_pid = os.environ.get("LISTEN_PID")
+
+    if listen_fds and listen_pid:
+        # verify the PID matches (security check)
+        if int(listen_pid) == os.getpid():
+            num_fds = int(listen_fds)
+            if num_fds > 0:
+                # first socket fd is always 3 (after stdin=0, stdout=1, stderr=2)
+                return 3
+
+    return None
+
+
 if __name__ == "__main__":
     init()
 
-    uvicorn.run(
-        app="src.deployment_server.server:create_app",
-        host="0.0.0.0",
-        port=int(os.environ.get("APPLICATION_SERVER_PORT")),
-        reload=env.is_dev(),
-        factory=True,
-        fd=3 if os.environ.get("LISTEN_FDS") and env.is_prod() is True else None,
-    )
+    socket_fd = get_socket_fd()
+
+    if socket_fd is not None:
+        uvicorn.run(
+            app="deployment_server.server:create_app", factory=True, fd=socket_fd
+        )
+    else:
+        uvicorn.run(
+            app="deployment_server.server:create_app",
+            factory=True,
+            host="0.0.0.0",
+            port=int(os.environ.get("APPLICATION_SERVER_PORT")),
+            reload=env.is_dev(),
+        )

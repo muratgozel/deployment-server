@@ -3,8 +3,8 @@ import pwd
 import grp
 import subprocess
 import shutil
+import re
 import venv
-from typing import Any
 from logging import Logger
 from pathlib import Path
 from typing import Annotated
@@ -40,8 +40,11 @@ class Deployer:
     def __init__(self):
         self.logger = Annotated[Logger, Provide[WorkerContainer.logger]]
         self.application_root_dir = Path("/opt")
+        self.application_config_root_dir = Path("/etc")
+        self.application_logs_root_dir = Path("/var/log")
+        self.application_data_root_dir = Path("/var/lib")
         self.user_root_dir = Path("/home")
-        self.systemd_root_dir = Path("/etc/systemd/user")
+        self.systemd_root_dir = Path("/etc/systemd/system")
         self.os_groups = ("deployer",)
 
     def deploy(
@@ -80,14 +83,16 @@ class Deployer:
                 return False, str(ex)
 
         os.environ["APPLICATION_MODE"] = mode
-        os.environ["APPLICATION_CONFIG_DIR"] = (self.user_root_dir / os_user).as_posix()
+        os.environ["APPLICATION_CONFIG_DIR"] = (
+            self.get_application_config_dir(project_code, mode)
+        ).as_posix()
         container = Container()
         container.config.set_yaml_files(files=find_yaml_files("deploy"))
         container.config.load()
 
         try:
             self.run_database_migrations(
-                db_migrations_root_dir, container.config.deploy.pg_conn_str()
+                db_migrations_root_dir, container.config.pg_conn_str()
             )
         except Exception as ex:
             return False, str(ex)
@@ -95,25 +100,56 @@ class Deployer:
         if daemons is not None and len(daemons) > 0:
             systemd_units = [d for d in daemons if d.type == DaemonType.SYSTEMD]
             if len(systemd_units) > 0:
-                self.setup_systemd_units(systemd_units, os_user, os_groups[0])
+                self.setup_systemd_units(
+                    daemons=systemd_units,
+                    project_code=project_code,
+                    mode=mode,
+                    os_user=os_user,
+                    os_group=os_groups[0],
+                )
 
         return True, ""
 
-    def setup_systemd_units(self, daemons: list[Daemon], os_user: str, os_group: str):
+    def setup_systemd_units(
+        self,
+        daemons: list[Daemon],
+        project_code: str,
+        mode: str,
+        os_user: str,
+        os_group: str,
+    ):
+        application_dir = self.get_application_dir(project_code, mode)
+        application_config_dir = self.get_application_config_dir(project_code, mode)
+        application_logs_dir = self.get_application_logs_dir(project_code, mode)
+        application_data_dir = self.get_application_data_dir(project_code, mode)
+
         new_sockets = new_socket_services = new_services = existing_sockets = (
             existing_socket_services
         ) = existing_services = []
         for d in daemons:
+            service_id = f"{self.get_application_id(project_code, mode)}-{d.name}"
+            py_exec, pip_exec = self.get_executables(self.get_venv_dir(application_dir))
+            exec_start = f"{py_exec} -m {d.py_module_name}"
             if d.type == DaemonType.DOCKER:
+                # NOTE no support for docker deployments currently
                 continue
             if d.port:
-                socket_file_name = f"{d.name}.socket"
-                service_file_name = f"{d.name}.service"
+                socket_file_name = f"{service_id}.socket"
+                service_file_name = f"{service_id}.service"
                 socket_file_path = self.systemd_root_dir / socket_file_name
                 service_file_path = self.systemd_root_dir / service_file_name
                 service_content, socket_content = (
                     generators.systemd_service_with_socket(
-                        d.name, os_user, os_group, d.py_module_name, d.port
+                        service_id=service_id,
+                        application_dir=application_dir.as_posix(),
+                        application_logs_dir=application_logs_dir.as_posix(),
+                        application_data_dir=application_data_dir.as_posix(),
+                        application_config_dir=application_config_dir.as_posix(),
+                        exec_start=exec_start,
+                        mode=mode,
+                        user=os_user,
+                        group=os_group,
+                        port=d.port,
                     )
                 )
                 if not socket_file_path.exists():
@@ -137,10 +173,18 @@ class Deployer:
                 else:
                     existing_socket_services.append(d.name)
             else:
-                service_file_name = f"{d.name}.service"
+                service_file_name = f"{service_id}.service"
                 service_file_path = self.systemd_root_dir / service_file_name
                 service_content = generators.systemd_service(
-                    d.name, os_user, os_group, d.py_module_name
+                    service_id=service_id,
+                    application_dir=application_dir.as_posix(),
+                    application_logs_dir=application_logs_dir.as_posix(),
+                    application_data_dir=application_data_dir.as_posix(),
+                    application_config_dir=application_config_dir.as_posix(),
+                    exec_start=exec_start,
+                    mode=mode,
+                    user=os_user,
+                    group=os_group,
                 )
                 if not service_file_path.exists():
                     success, message = self.write_file(
@@ -207,7 +251,7 @@ class Deployer:
                 "dbmate",
                 "--wait",
                 "--wait-timeout",
-                "10",
+                "10s",
                 "-d",
                 db_migrations_dir.as_posix(),
                 "up",
@@ -234,13 +278,12 @@ class Deployer:
         pip_index_auth: str,
     ) -> tuple[Path, Path, Path]:
         application_dir = self.get_application_dir(project_code, mode)
-        venv_dir = application_dir / ".venv"
+        venv_dir = self.get_venv_dir(application_dir)
         if not venv_dir.exists():
             venv.create(venv_dir, with_pip=True, upgrade_deps=True)
         self.logger.info(f"verified venv")
 
-        py_exec = Path(venv_dir) / "bin" / "python"
-        pip_exec = Path(venv_dir) / "bin" / "pip"
+        py_exec, pip_exec = self.get_executables(venv_dir)
         priv_url = modifiers.add_auth_to_url(
             pip_index_url, pip_index_auth, pip_index_user
         )
@@ -340,6 +383,43 @@ class Deployer:
         )
         self.logger.info(f"verified application directory: {str(application_dir)}")
 
+        config_dir = self.get_application_config_dir(project_code, mode)
+        os.makedirs(config_dir, exist_ok=True)
+        os.chown(
+            config_dir,
+            pwd.getpwnam(os_user).pw_uid,
+            grp.getgrnam(self.os_groups[0]).gr_gid,
+        )
+        os.chmod(config_dir, 0o755)
+        critical_files = self.find_critical_files(config_dir)
+        for file in critical_files:
+            os.chown(
+                file,
+                pwd.getpwnam(os_user).pw_uid,
+                grp.getgrnam(self.os_groups[0]).gr_gid,
+            )
+            os.chmod(file, 0o640)
+        self.logger.info(
+            f"verified application config directory and files: {str(config_dir)}"
+        )
+
+        application_logs_dir = self.get_application_logs_dir(project_code, mode)
+        application_data_dir = self.get_application_data_dir(project_code, mode)
+        os.makedirs(application_logs_dir, exist_ok=True)
+        os.makedirs(application_data_dir, exist_ok=True)
+        os.chown(
+            application_logs_dir,
+            pwd.getpwnam(os_user).pw_uid,
+            grp.getgrnam(os_group).gr_gid,
+        )
+        os.chmod(application_logs_dir, 0o775)
+        os.chown(
+            application_data_dir,
+            pwd.getpwnam(os_user).pw_uid,
+            grp.getgrnam(os_group).gr_gid,
+        )
+        os.chmod(application_data_dir, 0o775)
+
         return application_dir, os_user, os_groups
 
     def remove_os_configuration(self, project_code: str, mode: str):
@@ -365,8 +445,61 @@ class Deployer:
 
         return True
 
+    def find_critical_files(self, dir: Path):
+        if not dir.exists():
+            raise ValueError(f"directory doesn't exist: {dir}")
+        if not dir.is_dir():
+            raise ValueError(f"path is not a directory: {dir}")
+
+        matching_files = []
+
+        try:
+            # all files (and subfolders) inside dir
+            for item in os.listdir(dir):
+                item_path = os.path.join(dir, item)
+
+                if os.path.isdir(item_path):
+                    continue
+
+                if item.endswith(".yaml") and "config" in item.lower():
+                    matching_files.append(item_path)
+
+                elif item == ".env" or re.match(r"^\.env\..+$", item):
+                    matching_files.append(item_path)
+
+        except PermissionError:
+            raise PermissionError(f"Permission denied accessing directory '{dir}'")
+
+        return sorted(matching_files)
+
+    def get_executables(self, venv_dir: Path):
+        py_exec = venv_dir / "bin" / "python"
+        pip_exec = venv_dir / "bin" / "pip"
+        return py_exec, pip_exec
+
+    def get_application_config_dir(self, project_code: str, mode: str):
+        return self.application_config_root_dir / self.get_application_id(
+            project_code, mode
+        )
+
+    def get_application_logs_dir(self, project_code: str, mode: str):
+        return self.application_logs_root_dir / self.get_application_id(
+            project_code, mode
+        )
+
+    def get_application_data_dir(self, project_code: str, mode: str):
+        return self.application_data_root_dir / self.get_application_id(
+            project_code, mode
+        )
+
+    def get_venv_dir(self, application_dir: Path):
+        return application_dir / ".venv"
+
     def get_application_dir(self, project_code: str, mode: str):
-        return self.application_root_dir / f"{mode}-{project_code}"
+        return self.application_root_dir / self.get_application_id(project_code, mode)
+
+    def get_application_id(self, project_code: str, mode: str):
+        return f"{mode}-{project_code}"
 
     def is_os_user_exists(self, username: str) -> bool:
         try:
