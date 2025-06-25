@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.3.0](https://github.com/muratgozel/deployment-server/compare/a999b65291e85926489fa660995ea44f739647ec..0.3.0) - 2025-06-25
+#### Features
+- setup ssl certs - ([a999b65](https://github.com/muratgozel/deployment-server/commit/a999b65291e85926489fa660995ea44f739647ec)) - Murat Gözel
+
+- - -
+
 ## [0.2.3](https://github.com/muratgozel/deployment-server/compare/eda2651d0ed29f7810dade6a3e142a76b0aee679..0.2.3) - 2025-06-24
 #### Bug Fixes
 - deployment task - ([eda2651](https://github.com/muratgozel/deployment-server/commit/eda2651d0ed29f7810dade6a3e142a76b0aee679)) - Murat Gözel
