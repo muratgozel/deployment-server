@@ -39,7 +39,8 @@ dependencies = [
   "nanoid",
   "GitPython",
   "Jinja2",
-  "python-slugify[unidecode]"
+  "python-slugify[unidecode]",
+  "click"
 ]
 
 [project.optional-dependencies]
@@ -55,6 +56,9 @@ dev = [
 Documentation = "https://github.com/muratgozel/deployment-server#readme"
 Issues = "https://github.com/muratgozel/deployment-server/issues"
 Source = "https://github.com/muratgozel/deployment-server"
+
+[project.scripts]
+deployer = "deployment_server.cli:main"
 
 [tool.hatch.version]
 source = "vcs"

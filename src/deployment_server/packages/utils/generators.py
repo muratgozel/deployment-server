@@ -18,8 +18,6 @@ WantedBy=sockets.target
 template_socket_service = """\
 [Unit]
 Description={{ service_id }} service.
-Requires={{ service_id }}.socket
-After={{ service_id }}.socket
 
 [Service]
 Type=exec
@@ -36,9 +34,6 @@ Restart=always
 RestartSec=5
 TimeoutStartSec=30
 TimeoutStopSec=30
-
-# socket activation
-StandardInput=socket
 
 # security hardening
 NoNewPrivileges=yes
