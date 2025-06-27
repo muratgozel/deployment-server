@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.5.4](https://github.com/muratgozel/deployment-server/compare/cd0742f4a27eb85290d3c2f108cb5c700fc2d67e..0.5.4) - 2025-06-27
+#### Bug Fixes
+- nginx conf test - ([cd0742f](https://github.com/muratgozel/deployment-server/commit/cd0742f4a27eb85290d3c2f108cb5c700fc2d67e)) - Murat Gözel
+
+- - -
+
 ## [0.5.3](https://github.com/muratgozel/deployment-server/compare/2170c28dcef83198dfb4ab30635fb2dd317473e0..0.5.3) - 2025-06-27
 #### Bug Fixes
 - cmd args - ([2170c28](https://github.com/muratgozel/deployment-server/commit/2170c28dcef83198dfb4ab30635fb2dd317473e0)) - Murat Gözel
