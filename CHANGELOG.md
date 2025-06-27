@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.5.2](https://github.com/muratgozel/deployment-server/compare/528abcf29b0eae0531959fdfe89ebe5a18d0f6be..0.5.2) - 2025-06-27
+#### Bug Fixes
+- cmd options - ([528abcf](https://github.com/muratgozel/deployment-server/commit/528abcf29b0eae0531959fdfe89ebe5a18d0f6be)) - Murat Gözel
+
+- - -
+
 ## [0.5.1](https://github.com/muratgozel/deployment-server/compare/6cb56f96c9a17dba688118251ca7ad2d855adc82..0.5.1) - 2025-06-27
 #### Bug Fixes
 - cmd option aliases - ([6cb56f9](https://github.com/muratgozel/deployment-server/commit/6cb56f96c9a17dba688118251ca7ad2d855adc82)) - Murat Gözel
