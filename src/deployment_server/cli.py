@@ -97,14 +97,15 @@ def remove_ssl_certs(
 
 @click.command()
 @click.option(
-    "-s, --server-name",
+    "-s",
+    "--server-name",
     nargs=-1,
     required=True,
     help="The hostname(s) to accept client requests on.",
 )
 @click.option("--upstream-name", required=True, help="The upstream name.")
 @click.option(
-    "-u, --upstream-server", nargs=-1, required=True, help="The upstream server(s)."
+    "-u", "--upstream-server", nargs=-1, required=True, help="The upstream server(s)."
 )
 @click.option(
     "--ssl-cert-fullchain-file",
@@ -152,7 +153,8 @@ def setup_proxy_host(
 
 @click.command()
 @click.option(
-    "-s, --server-name",
+    "-s",
+    "--server-name",
     nargs=-1,
     required=True,
     help="The hostname(s) to accept client requests on.",
@@ -161,7 +163,8 @@ def setup_proxy_host(
     "--root-dir", required=True, help="The root directory to serve files from."
 )
 @click.option(
-    "-p, --static-paths",
+    "-p",
+    "--static-paths",
     nargs=-1,
     required=True,
     help="Static path to serve with caching enabled.",
