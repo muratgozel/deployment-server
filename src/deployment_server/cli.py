@@ -10,7 +10,7 @@ def main():
 
 
 @click.command()
-@click.argument("domain", multiple=True)
+@click.argument("domain", nargs=-1, required=True)
 @click.option("--dns", required=True, help="The dns provider.")
 @click.option(
     "--ssl-root-dir",
@@ -58,7 +58,7 @@ def setup_ssl_certs(
 
 
 @click.command()
-@click.argument("domain", multiple=True)
+@click.argument("domain", nargs=-1, required=True)
 @click.option("--revoke/--no-revoke", default=True, help="Also revoke certificates.")
 @click.option(
     "--acme-bin-dir",
