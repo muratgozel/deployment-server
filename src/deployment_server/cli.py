@@ -10,7 +10,7 @@ def main():
 
 
 @click.command()
-@click.argument("domain", nargs=-1)
+@click.argument("domain", multiple=True)
 @click.option("--dns", required=True, help="The dns provider.")
 @click.option(
     "--ssl-root-dir",
@@ -58,7 +58,7 @@ def setup_ssl_certs(
 
 
 @click.command()
-@click.argument("domain", nargs=-1)
+@click.argument("domain", multiple=True)
 @click.option("--revoke/--no-revoke", default=True, help="Also revoke certificates.")
 @click.option(
     "--acme-bin-dir",
@@ -99,13 +99,17 @@ def remove_ssl_certs(
 @click.option(
     "-s",
     "--server-name",
-    nargs=-1,
+    multiple=True,
     required=True,
     help="The hostname(s) to accept client requests on.",
 )
 @click.option("--upstream-name", required=True, help="The upstream name.")
 @click.option(
-    "-u", "--upstream-server", nargs=-1, required=True, help="The upstream server(s)."
+    "-u",
+    "--upstream-server",
+    multiple=True,
+    required=True,
+    help="The upstream server(s).",
 )
 @click.option(
     "--ssl-cert-fullchain-file",
@@ -155,7 +159,7 @@ def setup_proxy_host(
 @click.option(
     "-s",
     "--server-name",
-    nargs=-1,
+    multiple=True,
     required=True,
     help="The hostname(s) to accept client requests on.",
 )
@@ -165,7 +169,7 @@ def setup_proxy_host(
 @click.option(
     "-p",
     "--static-paths",
-    nargs=-1,
+    multiple=True,
     required=True,
     help="Static path to serve with caching enabled.",
 )
