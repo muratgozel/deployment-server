@@ -124,7 +124,28 @@ def project_name(name: str):
             result = decoded == name
             if (
                 result
-                and all(char in deployment_mode_allowed_chars for char in name)
+                and all(char in project_name_allowed_chars for char in name)
+                and not name.startswith(("_", "-"))
+                and not name.endswith(("-", "_"))
+            ):
+                return True
+        except UnicodeError:
+            return False
+    return False
+
+
+nginx_upstream_name_allowed_chars = tuple("abcdefghijklmnopqrstuvwxyz_0123456789")
+
+
+def nginx_upstream_name(name: str):
+    if isinstance(name, str):
+        try:
+            encoded = name.encode("utf-8")
+            decoded = encoded.decode("utf-8")
+            result = decoded == name
+            if (
+                result
+                and all(char in nginx_upstream_name_allowed_chars for char in name)
                 and not name.startswith(("_", "-"))
                 and not name.endswith(("-", "_"))
             ):
