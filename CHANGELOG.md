@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.5.5](https://github.com/muratgozel/deployment-server/compare/bfb0fcfe09782da9c8be8a3f2dbb1270e345dad9..0.5.5) - 2025-06-27
+#### Bug Fixes
+- backslash in generator templates - ([bfb0fcf](https://github.com/muratgozel/deployment-server/commit/bfb0fcfe09782da9c8be8a3f2dbb1270e345dad9)) - Murat Gözel
+
+- - -
+
 ## [0.5.4](https://github.com/muratgozel/deployment-server/compare/cd0742f4a27eb85290d3c2f108cb5c700fc2d67e..0.5.4) - 2025-06-27
 #### Bug Fixes
 - nginx conf test - ([cd0742f](https://github.com/muratgozel/deployment-server/commit/cd0742f4a27eb85290d3c2f108cb5c700fc2d67e)) - Murat Gözel
