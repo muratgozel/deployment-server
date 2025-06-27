@@ -51,6 +51,8 @@ def setup_proxy_host(
     server_names_text = " ".join(server_names)
     upstream_servers_text = ""
     for u in upstream_servers:
+        if u.startswith("http:"):
+            return False, "no need to add http(s) protocol to the upstream server."
         upstream_servers_text += f"    server {u};\n"
 
     content = generators.nginx_proxy_host(

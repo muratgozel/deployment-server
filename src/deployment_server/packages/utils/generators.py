@@ -103,7 +103,7 @@ WantedBy=multi-user.target
 """
 
 
-template_nginx_proxy_host = r"""\
+template_nginx_proxy_host = r"""
 upstream {{ upstream_name }} {
     {{ upstream_servers }}
 
@@ -173,7 +173,7 @@ server {
 """
 
 
-template_nginx_static_host = r"""\
+template_nginx_static_host = r"""
 server {
     listen 80;
     listen [::]:80;
