@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+from pathlib import Path
 from deployment_server.packages.utils import generators, validators
 
 
@@ -60,14 +61,16 @@ def setup_proxy_host(
         ssl_cert_key_file=ssl_cert_key_file,
     )
 
-    if is_nginx_available():
-        args = ["nginx", "-t", "-c", "/dev/stdin"]
-        result = subprocess.run(args, input=content, text=True, capture_output=True)
-        if result.returncode != 0:
-            return False, f"failed to validate nginx config: {result.stderr}"
-
-    with open(f"{nginx_conf_dir}/{primary_server_name}.conf", "w") as f:
+    nginx_conf_file = f"{nginx_conf_dir}/{primary_server_name}.conf"
+    with open(nginx_conf_file, "w") as f:
         f.write(content)
+
+    if is_nginx_available():
+        args = ["nginx", "-t"]
+        result = subprocess.run(args, text=True, capture_output=True)
+        if result.returncode != 0:
+            Path(nginx_conf_file).unlink()
+            return False, f"failed to validate nginx config: {result.stderr}"
 
     if is_nginx_available():
         args = ["service", "nginx", "reload"]
@@ -120,14 +123,16 @@ def setup_static_host(
         static_paths=static_paths_text,
     )
 
-    if is_nginx_available():
-        args = ["nginx", "-t", "-c", "/dev/stdin"]
-        result = subprocess.run(args, input=content, text=True, capture_output=True)
-        if result.returncode != 0:
-            return False, f"failed to validate nginx config: {result.stderr}"
-
-    with open(f"{nginx_conf_dir}/{primary_server_name}.conf", "w") as f:
+    nginx_conf_file = f"{nginx_conf_dir}/{primary_server_name}.conf"
+    with open(nginx_conf_file, "w") as f:
         f.write(content)
+
+    if is_nginx_available():
+        args = ["nginx", "-t"]
+        result = subprocess.run(args, text=True, capture_output=True)
+        if result.returncode != 0:
+            Path(nginx_conf_file).unlink()
+            return False, f"failed to validate nginx config: {result.stderr}"
 
     if is_nginx_available():
         args = ["service", "nginx", "reload"]

@@ -115,12 +115,14 @@ def remove_ssl_certs(
     "--ssl-cert-fullchain-file",
     required=False,
     default=nginx.template_ssl_cert_fullchain_file,
+    show_default=True,
     help="The fullchain file path.",
 )
 @click.option(
     "--ssl-cert-key-file",
     required=False,
     default=nginx.template_ssl_cert_key_file,
+    show_default=True,
     help="The key file path.",
 )
 @click.option(
@@ -177,12 +179,14 @@ def setup_proxy_host(
     "--ssl-cert-fullchain-file",
     required=False,
     default=nginx.template_ssl_cert_fullchain_file,
+    show_default=True,
     help="The fullchain file path.",
 )
 @click.option(
     "--ssl-cert-key-file",
     required=False,
     default=nginx.template_ssl_cert_key_file,
+    show_default=True,
     help="The key file path.",
 )
 @click.option(
