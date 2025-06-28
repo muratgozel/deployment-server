@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.5.6](https://github.com/muratgozel/deployment-server/compare/78b1c7a212219763f18a06088bab1c11fe81b664..0.5.6) - 2025-06-28
+#### Bug Fixes
+- celery beat scheduler db dir - ([78b1c7a](https://github.com/muratgozel/deployment-server/commit/78b1c7a212219763f18a06088bab1c11fe81b664)) - Murat Gözel
+
+- - -
+
 ## [0.5.5](https://github.com/muratgozel/deployment-server/compare/bfb0fcfe09782da9c8be8a3f2dbb1270e345dad9..0.5.5) - 2025-06-27
 #### Bug Fixes
 - backslash in generator templates - ([bfb0fcf](https://github.com/muratgozel/deployment-server/commit/bfb0fcfe09782da9c8be8a3f2dbb1270e345dad9)) - Murat Gözel
