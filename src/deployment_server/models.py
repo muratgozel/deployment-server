@@ -28,6 +28,11 @@ class SystemdUnit(BaseModel):
     ] = None
 
 
+class SecretsProvider(enum.Enum):
+    LOCAL = "LOCAL"
+    COLDRUNE = "COLDRUNE"
+
+
 class ModelBase(AsyncAttrs, DeclarativeBase):
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
@@ -60,6 +65,9 @@ class Project(ModelBase):
     pip_index_url: Mapped[Optional[str]] = mapped_column(String)
     pip_index_user: Mapped[Optional[str]] = mapped_column(String)
     pip_index_auth: Mapped[Optional[str]] = mapped_column(String)
+    secrets_provider: Mapped[SecretsProvider] = mapped_column(
+        Enum(SecretsProvider, name="secrets_provider")
+    )
 
     deployments: Mapped[list["Deployment"]] = relationship(
         back_populates="project", lazy="selectin"
@@ -78,7 +86,7 @@ class Daemon(ModelBase):
     __tablename__ = "daemon"
     rid: Mapped[str]
 
-    type: Mapped[DaemonType] = mapped_column(Enum(DaemonType))
+    type: Mapped[DaemonType] = mapped_column(Enum(DaemonType, name="daemon_type"))
     name: Mapped[str] = mapped_column(String)
     port: Mapped[Optional[int]] = mapped_column(Integer, default=0)
     py_module_name: Mapped[Optional[str]] = mapped_column(String)
@@ -122,7 +130,9 @@ class DeploymentStatusUpdate(ModelBase):
     __tablename__ = "deployment_status_update"
     rid: Mapped[str]
 
-    status: Mapped[DeploymentStatus] = mapped_column(Enum(DeploymentStatus))
+    status: Mapped[DeploymentStatus] = mapped_column(
+        Enum(DeploymentStatus, name="deployment_status")
+    )
     description: Mapped[Optional[str]] = mapped_column(String)
     deployment_rid: Mapped[str] = mapped_column(
         String, ForeignKey("deployment.rid", ondelete="CASCADE")

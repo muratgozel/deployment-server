@@ -6,11 +6,13 @@ from deployment_server.modules import env
 if __name__ == "__main__":
     init()
 
+    worker = create_worker()
+    codename = worker.container.config.codename()
+    mode = env.get_mode()
+    data_dir_prod = f"/var/lib/{mode}-{codename}"
     schedule_db_file = (
-        "/var/lib/prod-deployment-server-25-http/celerybeat-schedule"
+        f"{data_dir_prod}/celerybeat-schedule"
         if env.is_prod()
         else "./celerybeat-schedule"
     )
-
-    worker = create_worker()
     worker.start(["beat", "--loglevel=info", "--schedule", schedule_db_file])

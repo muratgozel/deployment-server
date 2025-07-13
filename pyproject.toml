@@ -25,7 +25,6 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "dotenv",
   "pyyaml",
   "dependency-injector",
   "uvicorn[standard]",
@@ -72,7 +71,8 @@ features = [
 [tool.hatch.envs.dev.scripts]
 test = "APPLICATION_MODE=testing pytest {args}"
 test-cov = "pytest --cov-report=term-missing --cov={args}"
-migrate = "dbmate --wait -d src/deployment_server/db/migrations/ up"
+migrate = "DATABASE_URL=postgresql://postgres:emmastone@localhost:5432/deployment_server?sslmode=disable dbmate --wait -d src/deployment_server/db/migrations/ up"
+server = "python -m deployment_server.server"
 
 [tool.hatch.envs.dev.env-vars]
 APPLICATION_CONFIG_DIR = "~/deployment-server-25"

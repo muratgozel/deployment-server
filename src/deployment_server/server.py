@@ -11,8 +11,8 @@ from deployment_server.init import init
 
 
 def create_app() -> FastAPI:
-    from deployment_server.containers import ServerContainer
-    from deployment_server.packages.utils.customizers import get_openapi_custom
+    from deployment_server.containers.server import ServerContainer
+    from deployment_server.packages.utils.customizers import generate_get_openapi_custom
     from deployment_server.routers import health, project, deployment
 
     container = ServerContainer()
@@ -25,7 +25,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(lifespan=lifespan)
     app.container = container
-    app.openapi = get_openapi_custom
+    app.openapi = generate_get_openapi_custom(app=app)
     app.include_router(health.router)
     app.include_router(project.router)
     app.include_router(deployment.router)

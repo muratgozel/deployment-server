@@ -1,7 +1,7 @@
 from typing import Annotated
 from celery import shared_task
 from dependency_injector.wiring import inject, Provide
-from deployment_server.containers import WorkerContainer
+from deployment_server.containers.worker import WorkerContainer
 from deployment_server.models import DeploymentStatus
 from deployment_server.services.deployment import DeploymentService
 from deployment_server.services.project import ProjectService
@@ -36,6 +36,7 @@ def run_deployment(
         pip_index_user=project.pip_index_user,
         pip_index_auth=project.pip_index_auth,
         daemons=project.daemons,
+        secrets_provider=project.secrets_provider,
     )
     if not success:
         deployer.logger.error(message)

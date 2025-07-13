@@ -1,6 +1,6 @@
 from slugify import slugify
 from deployment_server.repositories.project import ProjectRepository
-from deployment_server.models import Project, SystemdUnit
+from deployment_server.models import Project, SystemdUnit, SecretsProvider
 
 
 class ProjectService:
@@ -32,6 +32,7 @@ class ProjectService:
         self,
         name: str,
         code: str,
+        secrets_provider: SecretsProvider,
         git_url: str = None,
         pip_package_name: str = None,
         pip_index_url: str = None,
@@ -48,6 +49,7 @@ class ProjectService:
             pip_index_url=pip_index_url,
             pip_index_user=pip_index_user,
             pip_index_auth=pip_index_auth,
+            secrets_provider=secrets_provider,
         )
         return await self.project_repo.add(project=project, daemons=daemons)
 

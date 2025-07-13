@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, APIRouter
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel, AfterValidator, Field
 from deployment_server.packages.utils import converters, validators
-from deployment_server.containers import ServerContainer
+from deployment_server.containers.server import ServerContainer
 from deployment_server.services.project import ProjectService
 from deployment_server.services.deployment import DeploymentService
 from deployment_server.models import Deployment

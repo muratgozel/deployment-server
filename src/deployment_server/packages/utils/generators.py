@@ -21,8 +21,7 @@ Description={{ service_id }} service.
 
 [Service]
 Type=exec
-User={{ user }}
-Group={{ group }}
+DynamicUser=yes
 WorkingDirectory={{ application_dir }}
 Environment=PYTHONPATH={{ application_dir }}
 Environment=PYTHONUNBUFFERED=1
@@ -30,34 +29,47 @@ Environment=DEBUG=0
 Environment=APPLICATION_MODE={{ mode }}
 Environment=APPLICATION_CONFIG_DIR={{ application_config_dir }}
 ExecStart={{ exec_start }}
-Restart=always
-RestartSec=5
-TimeoutStartSec=30
-TimeoutStopSec=30
+Restart=on-failure
+RestartSec=3s
+TimeoutStartSec=10
+TimeoutStopSec=10
 
 # security hardening
-NoNewPrivileges=yes
 PrivateTmp=yes
-ProtectSystem=strict
+NoNewPrivileges=yes
 ProtectHome=yes
-BindReadOnlyPaths={{ application_config_dir }}
-ReadWritePaths={{ application_logs_dir }} {{ application_data_dir }}
+ProtectSystem=strict
+ProtectProc=invisible
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectKernelTunables=yes
+PrivateNetwork=no
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+PrivateDevices=yes
+ProtectHostname=yes
+SystemCallFilter=@system-service
+ReadOnlyPaths={{ read_paths }}
+#BindReadOnlyPaths={{ read_paths }}
+ReadWritePaths={{ write_paths }}
+#BindPaths={{ write_paths }}
 
 # resource limits
-LimitNOFILE=65536
-MemoryMax=1G
+MemoryMax=512M
+CPUQuota=50%
+TasksMax=50
 
 # logging
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier={{ service_id }}
+LogRateLimitIntervalSec=0
 
 [Install]
 WantedBy=multi-user.target
 """
 
 
-template_service = """\
+template_service_old = """\
 [Unit]
 Description={{ service_id }} service.
 Requires=network.target
@@ -97,6 +109,64 @@ MemoryMax=2G
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier={{ service_id }}
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+
+template_service = """\
+[Unit]
+Description={{ service_id }} service.
+Requires=network.target
+After=network.target
+
+[Service]
+Type=exec
+DynamicUser=yes
+WorkingDirectory={{ application_dir }}
+Environment=PYTHONPATH={{ application_dir }}
+Environment=PYTHONUNBUFFERED=1
+Environment=DEBUG=0
+Environment=APPLICATION_MODE={{ mode }}
+Environment=APPLICATION_CONFIG_DIR={{ application_config_dir }}
+ExecStart={{ exec_start }}
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGTERM
+Restart=on-failure
+RestartSec=3s
+TimeoutStartSec=10
+TimeoutStopSec=10
+
+# security hardening
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+ProtectProc=invisible
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectKernelTunables=yes
+PrivateNetwork=no
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+PrivateDevices=yes
+ProtectHostname=yes
+SystemCallFilter=@system-service
+ReadOnlyPaths={{ read_paths }}
+#BindReadOnlyPaths={{ read_paths }}
+ReadWritePaths={{ write_paths }}
+#BindPaths={{ write_paths }}
+
+# resource limits
+MemoryMax=512M
+CPUQuota=50%
+TasksMax=50
+
+# logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier={{ service_id }}
+LogRateLimitIntervalSec=0
 
 [Install]
 WantedBy=multi-user.target
@@ -279,23 +349,32 @@ def systemd_service_with_socket(
     application_data_dir: str,
     application_config_dir: str,
     mode: str,
-    user: str,
-    group: str,
     exec_start: str,
     port: str | int,
 ):
     template = jinja2.Environment(
         loader=jinja2.BaseLoader(), keep_trailing_newline=True, lstrip_blocks=True
     ).from_string(template_socket_service)
+    read_paths = " ".join(
+        (
+            application_dir,
+            application_logs_dir,
+            application_data_dir,
+            application_config_dir,
+        )
+    )
+    write_paths = " ".join(
+        (application_dir, application_logs_dir, application_data_dir)
+    )
     service = template.render(
         service_id=service_id,
         application_dir=application_dir,
         application_logs_dir=application_logs_dir,
         application_data_dir=application_data_dir,
         application_config_dir=application_config_dir,
+        read_paths=read_paths,
+        write_paths=write_paths,
         mode=mode,
-        user=user,
-        group=group,
         exec_start=exec_start,
     )
 
@@ -313,21 +392,30 @@ def systemd_service(
     application_data_dir: str,
     application_config_dir: str,
     mode: str,
-    user: str,
-    group: str,
     exec_start: str,
 ):
     template = jinja2.Environment(
         loader=jinja2.BaseLoader(), keep_trailing_newline=True, lstrip_blocks=True
     ).from_string(template_service)
+    read_paths = " ".join(
+        (
+            application_dir,
+            application_logs_dir,
+            application_data_dir,
+            application_config_dir,
+        )
+    )
+    write_paths = " ".join(
+        (application_dir, application_logs_dir, application_data_dir)
+    )
     return template.render(
         service_id=service_id,
-        user=user,
-        group=group,
         application_dir=application_dir,
         application_logs_dir=application_logs_dir,
         application_data_dir=application_data_dir,
         application_config_dir=application_config_dir,
+        read_paths=read_paths,
+        write_paths=write_paths,
         mode=mode,
         exec_start=exec_start,
     )

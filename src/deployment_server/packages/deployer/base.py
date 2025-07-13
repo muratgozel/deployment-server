@@ -10,25 +10,10 @@ from pathlib import Path
 from typing import Annotated
 from dependency_injector import containers, providers
 from dependency_injector.wiring import Provide
-from deployment_server.containers import WorkerContainer
-from deployment_server.models import Daemon, DaemonType
+from deployment_server.containers.worker import WorkerContainer
+from deployment_server.models import Daemon, DaemonType, SecretsProvider
 from deployment_server.packages.utils import modifiers, generators
-
-
-def find_yaml_files(service_name: str) -> list[str | Path]:
-    config_dir = Path(os.environ.get("APPLICATION_CONFIG_DIR"))
-    config_file_names_to_load = (
-        "config.yaml",
-        f"config_{os.environ.get('APPLICATION_MODE')}.yaml",
-        f"config_{service_name}.yaml",
-        f"config_{os.environ.get('APPLICATION_MODE')}_{service_name}.yaml",
-    )
-    yaml_files = [
-        config_dir / name
-        for name in config_file_names_to_load
-        if (config_dir / name).exists()
-    ]
-    return yaml_files
+from deployment_server.containers.common import find_yaml_files
 
 
 class Container(containers.DeclarativeContainer):
@@ -47,10 +32,27 @@ class Deployer:
         self.systemd_root_dir = Path("/etc/systemd/system")
         self.os_groups = ("deployer",)
 
+    def fetch_secrets(self, provider: SecretsProvider, mode: str, project_code: str):
+        if provider == SecretsProvider.LOCAL:
+            os.environ["APPLICATION_MODE"] = mode
+            os.environ["APPLICATION_CONFIG_DIR"] = self.get_application_config_dir(
+                project_code, mode
+            ).as_posix()
+            container = Container()
+            container.config.set_yaml_files(files=find_yaml_files("deploy"))
+            container.config.load()
+            return container.config()
+        elif provider == SecretsProvider.COLDRUNE:
+            # TODO integrate coldrune
+            return {}
+        else:
+            return {}
+
     def deploy(
         self,
         project_code: str,
         mode: str,
+        secrets_provider: SecretsProvider,
         pip_package_name: str = None,
         pip_index_url: str = None,
         pip_index_user: str = None,
@@ -64,8 +66,7 @@ class Deployer:
         except Exception as ex:
             return False, str(ex)
 
-        # TODO fetch secrets
-
+        env_vars_dict = self.fetch_secrets(secrets_provider, mode, project_code)
         db_migrations_root_dir = application_dir
 
         if pip_package_name is not None:
@@ -82,17 +83,9 @@ class Deployer:
             except Exception as ex:
                 return False, str(ex)
 
-        os.environ["APPLICATION_MODE"] = mode
-        os.environ["APPLICATION_CONFIG_DIR"] = (
-            self.get_application_config_dir(project_code, mode)
-        ).as_posix()
-        container = Container()
-        container.config.set_yaml_files(files=find_yaml_files("deploy"))
-        container.config.load()
-
         try:
             self.run_database_migrations(
-                db_migrations_root_dir, container.config.pg_conn_str()
+                db_migrations_root_dir, env_vars_dict["pg_conn_str"]
             )
         except Exception as ex:
             return False, str(ex)
@@ -147,8 +140,6 @@ class Deployer:
                         application_config_dir=application_config_dir.as_posix(),
                         exec_start=exec_start,
                         mode=mode,
-                        user=os_user,
-                        group=os_group,
                         port=d.port,
                     )
                 )
@@ -183,8 +174,6 @@ class Deployer:
                     application_config_dir=application_config_dir.as_posix(),
                     exec_start=exec_start,
                     mode=mode,
-                    user=os_user,
-                    group=os_group,
                 )
                 if not service_file_path.exists():
                     success, message = self.write_file(

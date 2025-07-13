@@ -35,6 +35,7 @@ async def test_project(get_app):
             "pip_index_url": "https://pypi.gozel.com.tr/",
             "pip_index_user": "user",
             "pip_index_auth": "pass",
+            "secrets_provider": "LOCAL",
         }
         auth = BasicAuth(
             username=app.container.config.api_user(),

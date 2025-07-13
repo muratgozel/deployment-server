@@ -33,3 +33,7 @@ def is_staging():
 def is_prod():
     mode = os.environ.get("APPLICATION_MODE")
     return True if "production" in mode or "prod" in mode else False
+
+
+def get_mode():
+    return os.environ.get("APPLICATION_MODE") or get_mode_fallback()

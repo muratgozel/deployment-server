@@ -6,7 +6,7 @@ from deployment_server.modules import env
 
 
 def create_worker() -> Celery:
-    from deployment_server.containers import WorkerContainer
+    from deployment_server.containers.worker import WorkerContainer
     from deployment_server.tasks.run_deployment import run_deployment
 
     container = WorkerContainer()
