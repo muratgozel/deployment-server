@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.5.8](https://github.com/muratgozel/deployment-server/compare/7d443ea3504007fa8694c29afe0d943cbc127720..0.5.8) - 2025-07-13
+#### Bug Fixes
+- fastapi openapi schema gen function - ([7d443ea](https://github.com/muratgozel/deployment-server/commit/7d443ea3504007fa8694c29afe0d943cbc127720)) - Murat Gözel
+
+- - -
+
 ## [0.5.7](https://github.com/muratgozel/deployment-server/compare/5c20080a0b12b1048d0c8f3cc3831a743d0797f6..0.5.7) - 2025-06-28
 #### Bug Fixes
 - celery beat db file path - ([5c20080](https://github.com/muratgozel/deployment-server/commit/5c20080a0b12b1048d0c8f3cc3831a743d0797f6)) - Murat Gözel
