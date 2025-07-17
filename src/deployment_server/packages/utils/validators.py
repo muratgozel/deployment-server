@@ -29,7 +29,7 @@ host_re = "(" + hostname_re + domain_re + tld_re + "|localhost)"
 
 def url(
     value: str,
-    required_attrs: str = ("scheme", "netloc", "path"),
+    required_attrs: str = ("scheme", "netloc"),  # "path" can be added for example
     scheme_whitelist: tuple[str] = ("https", "http", "git"),
 ):
     try:
