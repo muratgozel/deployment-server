@@ -1,3 +1,4 @@
+from logging import Logger
 from typing import Annotated
 from celery import shared_task
 from dependency_injector.wiring import inject, Provide
@@ -12,20 +13,27 @@ ProjectServiceType = Annotated[ProjectService, Provide[WorkerContainer.project_s
 DeploymentServiceType = Annotated[
     DeploymentService, Provide[WorkerContainer.deployment_service]
 ]
+LoggerType = Annotated[Logger, Provide[WorkerContainer.logger]]
 
 
 @shared_task()
 @inject
 def run_deployment(
-    project_service: ProjectServiceType, deployment_service: DeploymentServiceType
+    project_service: ProjectServiceType,
+    deployment_service: DeploymentServiceType,
+    logger: LoggerType,
 ):
+    logger.debug("checking deployment tasks.")
     rec = deployment_service.pick_deployment_sync()
     if rec is None:
+        logger.debug("no deployment tasks found.")
         return
 
     deployment_service.send_status_update_sync(rec.rid, DeploymentStatus.RUNNING)
 
     project = project_service.get_by_code_sync(rec.project_code)
+
+    logger.debug(f"deploying project {project.name or project.git_url}.")
 
     mode = rec.mode or "default"
     success, message = deployer.deploy(
