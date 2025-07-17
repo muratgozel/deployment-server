@@ -1,6 +1,10 @@
 import datetime
 from deployment_server.repositories.deployment import DeploymentRepository
-from deployment_server.models import Deployment, DeploymentStatus
+from deployment_server.models import (
+    Deployment,
+    DeploymentStatus,
+    DeploymentStatusUpdate,
+)
 
 
 class DeploymentService:
@@ -54,7 +58,14 @@ class DeploymentService:
             version=version,
             scheduled_to_run_at=scheduled_to_run_at,
         )
-        return await self.deployment_repo.add(deployment=deployment)
+        status_update = DeploymentStatusUpdate(
+            rid=DeploymentStatusUpdate.generate_rid(),
+            status=DeploymentStatus.READY,
+            deployment_rid=deployment.rid,
+        )
+        return await self.deployment_repo.add(
+            deployment=deployment, status_update=status_update
+        )
 
     async def remove_by_rid(self, rid: str):
         return await self.deployment_repo.remove_by_rid(rid=rid)

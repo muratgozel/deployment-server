@@ -146,9 +146,12 @@ class DeploymentRepository:
                 return recs[0]
             raise ValueError(f"multiple deployments found with the same {column_name}.")
 
-    async def add(self, deployment: Deployment) -> Deployment:
+    async def add(
+        self, deployment: Deployment, status_update: DeploymentStatusUpdate
+    ) -> Deployment:
         async with self.session_factory() as session:
             session.add(deployment)
+            session.add(status_update)
             await session.commit()
             return deployment
 
