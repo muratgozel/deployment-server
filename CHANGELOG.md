@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.5.11](https://github.com/muratgozel/deployment-server/compare/3b1f76729612954356f737a63c34b37b8f8c3312..0.5.11) - 2025-07-17
+#### Bug Fixes
+- debug deployment task runner - ([3b1f767](https://github.com/muratgozel/deployment-server/commit/3b1f76729612954356f737a63c34b37b8f8c3312)) - Murat Gözel
+
+- - -
+
 ## [0.5.10](https://github.com/muratgozel/deployment-server/compare/fff7ee95de3fdf198f57e6008f9821389caddc61..0.5.10) - 2025-07-17
 #### Bug Fixes
 - url validation - ([fff7ee9](https://github.com/muratgozel/deployment-server/commit/fff7ee95de3fdf198f57e6008f9821389caddc61)) - Murat Gözel
