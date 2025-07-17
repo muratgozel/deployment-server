@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request, exc):
+        app.container.logger().debug(exc)
         return JSONResponse(
             content={"error": {"code": "invalid_request"}}, status_code=400
         )

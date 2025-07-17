@@ -75,7 +75,7 @@ async def project_create(
     existing_project = await project_service.get_by_code(code)
     if existing_project is not None:
         raise HTTPException(
-            status_code=409, detail={"error": {"code": "project_already_exists"}}
+            status_code=404, detail={"error": {"code": "project_already_exists"}}
         )
 
     new_project = await project_service.create(
@@ -104,7 +104,7 @@ async def project_get(rid: ProjectRid, project_service: ProjectServiceType):
     project = await project_service.get_by_rid(rid)
     if project is None:
         raise HTTPException(
-            status_code=409, detail={"error": {"code": "project_not_found"}}
+            status_code=404, detail={"error": {"code": "project_not_found"}}
         )
     return project
 
@@ -121,7 +121,7 @@ async def project_remove(rid: ProjectRid, project_service: ProjectServiceType):
     project = await project_service.get_by_rid(rid)
     if project is None:
         raise HTTPException(
-            status_code=409, detail={"error": {"code": "project_not_found"}}
+            status_code=404, detail={"error": {"code": "project_not_found"}}
         )
 
     result = await project_service.remove_by_rid(project.rid)
