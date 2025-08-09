@@ -124,6 +124,7 @@ class DeploymentStatus(enum.Enum):
     RUNNING = "RUNNING"
     FAILED = "FAILED"
     SUCCESS = "SUCCESS"
+    SKIPPED = "SKIPPED"
 
 
 class DeploymentStatusUpdate(ModelBase):

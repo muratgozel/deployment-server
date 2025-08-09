@@ -14,14 +14,11 @@ class DeploymentService:
     async def verify_version_is_good_to_go(
         self, project_rid: str, version: str
     ) -> bool:
-        statuses_acceptable = [DeploymentStatus.FAILED]
         recs = await self.deployment_repo.get_latest_statuses(project_rid, version)
         if len(recs) == 0:
             return True
-        if len(recs) > 0:
-            recs_filtered = [x.status for x in recs if x.status in statuses_acceptable]
-            if len(recs_filtered) == len(recs):
-                return True
+        if recs[0].status == DeploymentStatus.FAILED:
+            return True
         return False
 
     async def pick_deployment(self):
