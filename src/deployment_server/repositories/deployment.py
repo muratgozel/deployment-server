@@ -128,7 +128,7 @@ ORDER BY d.rid, ds.created_at DESC;
                     project_code=arr[6],
                     deployment_rid=arr[0],
                     version=arr[1],
-                    mode=arr[2],
+                    mode=arr[2] or "default",
                     status=arr[4],
                     rid=arr[3],
                 )
@@ -149,7 +149,7 @@ ORDER BY d.rid, ds.created_at DESC;
                     project_code=arr[2],
                     deployment_rid=arr[3],
                     version=arr[4],
-                    mode=arr[5],
+                    mode=arr[5] or "default",
                     status=arr[6],
                     rid=arr[7],
                 )
@@ -175,7 +175,7 @@ ORDER BY d.rid, ds.created_at DESC;
                     project_code=arr[2],
                     deployment_rid=arr[3],
                     version=arr[4],
-                    mode=arr[5],
+                    mode=arr[5] or "default",
                     status=arr[6],
                     rid=arr[7],
                 )
