@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.5.15](https://github.com/muratgozel/deployment-server/compare/af45e1e4622718d4ef31a5684555e993e4d5a25c..0.5.15) - 2025-08-13
+#### Bug Fixes
+- mode fallback - ([af45e1e](https://github.com/muratgozel/deployment-server/commit/af45e1e4622718d4ef31a5684555e993e4d5a25c)) - Murat Gözel
+
+- - -
+
 ## [0.5.14](https://github.com/muratgozel/deployment-server/compare/7c04155d688795feb720967459c5ac10d8e6c145..0.5.14) - 2025-08-13
 #### Bug Fixes
 - run deployment task - ([7c04155](https://github.com/muratgozel/deployment-server/commit/7c04155d688795feb720967459c5ac10d8e6c145)) - Murat Gözel
