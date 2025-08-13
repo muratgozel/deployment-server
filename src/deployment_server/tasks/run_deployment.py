@@ -36,7 +36,7 @@ def run_deployment():
         secrets_provider=project.secrets_provider,
     )
     if not success:
-        deployer.logger.error(message)
+        logger.error(message)
         deployment_service.send_status_update_sync(rec.rid, DeploymentStatus.FAILED)
         return False
 
