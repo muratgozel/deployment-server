@@ -22,8 +22,8 @@ class Container(containers.DeclarativeContainer):
 
 class Deployer:
 
-    def __init__(self):
-        self.logger: Logger = None
+    def __init__(self, logger: Logger):
+        self.logger: Logger = logger
         self.application_root_dir = Path("/opt")
         self.application_config_root_dir = Path("/etc")
         self.application_logs_root_dir = Path("/var/log")
