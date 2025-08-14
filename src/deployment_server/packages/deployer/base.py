@@ -23,7 +23,7 @@ class Container(containers.DeclarativeContainer):
 class Deployer:
 
     def __init__(self):
-        self.logger = Annotated[Logger, Provide[WorkerContainer.logger]]
+        self.logger: Logger = None
         self.application_root_dir = Path("/opt")
         self.application_config_root_dir = Path("/etc")
         self.application_logs_root_dir = Path("/var/log")

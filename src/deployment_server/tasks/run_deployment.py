@@ -3,7 +3,7 @@ from celery import shared_task, current_app
 from deployment_server.models import DeploymentStatus
 from deployment_server.services.deployment import DeploymentService
 from deployment_server.services.project import ProjectService
-from deployment_server.packages.deployer import deployer
+from deployment_server.packages.deployer.base import Deployer
 
 
 @shared_task()
@@ -11,6 +11,7 @@ def run_deployment():
     logger: Logger = current_app.container.logger()
     project_service: ProjectService = current_app.container.project_service()
     deployment_service: DeploymentService = current_app.container.deployment_service()
+    deployer = Deployer(logger=logger)
     logger.debug("checking deployment tasks.")
 
     rec = deployment_service.pick_deployment_sync()
