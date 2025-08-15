@@ -158,9 +158,9 @@ class Deployer:
                         raise ValueError(
                             f"failed to write systemd socket {socket_file_name}. error: {message}"
                         )
-                    new_sockets.append(d.name)
+                    new_sockets.append(service_id)
                 else:
-                    existing_sockets.append(d.name)
+                    existing_sockets.append(service_id)
                 if not service_file_path.exists():
                     self.logger.debug(f"creating service file: {service_file_path}")
                     success, message = self.write_file(
@@ -170,9 +170,9 @@ class Deployer:
                         raise ValueError(
                             f"failed to write systemd service {service_file_name}. error: {message}"
                         )
-                    new_socket_services.append(d.name)
+                    new_socket_services.append(service_id)
                 else:
-                    existing_socket_services.append(d.name)
+                    existing_socket_services.append(service_id)
             else:
                 service_file_name = f"{service_id}.service"
                 service_file_path = self.systemd_root_dir / service_file_name
@@ -195,9 +195,9 @@ class Deployer:
                         raise ValueError(
                             f"failed to write systemd service {service_file_name}. error: {message}"
                         )
-                    new_services.append(d.name)
+                    new_services.append(service_id)
                 else:
-                    existing_services.append(d.name)
+                    existing_services.append(service_id)
 
         new_services_combined = [*new_sockets, *new_services]
 
