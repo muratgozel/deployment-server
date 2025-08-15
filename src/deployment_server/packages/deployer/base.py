@@ -203,6 +203,7 @@ class Deployer:
 
         if len(new_services_combined) > 0:
             args = ["sudo", "systemctl", "enable", *new_services_combined]
+            self.logger.debug(f"enabling new services: {args}")
             result = subprocess.run(args, capture_output=True, text=True)
             if result.returncode != 0:
                 raise ValueError(
@@ -215,6 +216,7 @@ class Deployer:
 
         if len([*new_services_combined, *new_socket_services]) > 0:
             args = ["sudo", "systemctl", "daemon-reload"]
+            self.logger.debug(f"reloading daemon")
             result = subprocess.run(args, capture_output=True, text=True)
             if result.returncode != 0:
                 raise ValueError(
@@ -223,6 +225,7 @@ class Deployer:
 
         if len(existing_socket_services) > 0:
             args = ["sudo", "systemctl", "restart", *existing_socket_services]
+            self.logger.debug(f"restarting existing sockets: {args}")
             result = subprocess.run(args, capture_output=True, text=True)
             if result.returncode != 0:
                 raise ValueError(
@@ -231,6 +234,7 @@ class Deployer:
 
         if len(existing_services) > 0:
             args = ["sudo", "systemctl", "reload", *existing_services]
+            self.logger.debug(f"reloading existing services: {args}")
             result = subprocess.run(args, capture_output=True, text=True)
             if result.returncode != 0:
                 raise ValueError(
