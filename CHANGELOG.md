@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.5.20](https://github.com/muratgozel/deployment-server/compare/2a81949f7ce7ad5827b0ad4b0275caeac3cad3d3..0.5.20) - 2025-08-15
+#### Bug Fixes
+- setting up systemd units - ([2a81949](https://github.com/muratgozel/deployment-server/commit/2a81949f7ce7ad5827b0ad4b0275caeac3cad3d3)) - Murat Gözel
+
+- - -
+
 ## [0.5.19](https://github.com/muratgozel/deployment-server/compare/028b4f0c87562c1b889f6a2ec011360a79c6d524..0.5.19) - 2025-08-15
 #### Bug Fixes
 - db migrations - ([028b4f0](https://github.com/muratgozel/deployment-server/commit/028b4f0c87562c1b889f6a2ec011360a79c6d524)) - Murat Gözel
