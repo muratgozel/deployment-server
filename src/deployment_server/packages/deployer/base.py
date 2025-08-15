@@ -113,6 +113,7 @@ class Deployer:
         os_user: str,
         os_group: str,
     ):
+        self.logger.debug("setting up systemd units")
         application_dir = self.get_application_dir(project_code, mode)
         application_config_dir = self.get_application_config_dir(project_code, mode)
         application_logs_dir = self.get_application_logs_dir(project_code, mode)
@@ -123,6 +124,7 @@ class Deployer:
         ) = existing_services = []
         for d in daemons:
             service_id = f"{self.get_application_id(project_code, mode)}-{d.name}"
+            self.logger.debug(f"setting up unit {service_id}")
             py_exec, pip_exec = self.get_executables(self.get_venv_dir(application_dir))
             exec_start = f"{py_exec} -m {d.py_module_name}"
             if d.type == DaemonType.DOCKER:
@@ -132,8 +134,11 @@ class Deployer:
             if d.port:
                 socket_file_name = f"{service_id}.socket"
                 service_file_name = f"{service_id}.service"
+                self.logger.debug(f"this is an http service")
                 socket_file_path = self.systemd_root_dir / socket_file_name
                 service_file_path = self.systemd_root_dir / service_file_name
+                self.logger.debug(f"socket file: {socket_file_path}")
+                self.logger.debug(f"service file: {service_file_path}")
                 service_content, socket_content = (
                     generators.systemd_service_with_socket(
                         service_id=service_id,
@@ -147,6 +152,7 @@ class Deployer:
                     )
                 )
                 if not socket_file_path.exists():
+                    self.logger.debug(f"creating socket file: {socket_file_path}")
                     success, message = self.write_file(socket_file_path, socket_content)
                     if not success:
                         raise ValueError(
@@ -156,6 +162,7 @@ class Deployer:
                 else:
                     existing_sockets.append(d.name)
                 if not service_file_path.exists():
+                    self.logger.debug(f"creating service file: {service_file_path}")
                     success, message = self.write_file(
                         service_file_path, service_content
                     )
@@ -169,6 +176,7 @@ class Deployer:
             else:
                 service_file_name = f"{service_id}.service"
                 service_file_path = self.systemd_root_dir / service_file_name
+                self.logger.debug(f"service file: {service_file_path}")
                 service_content = generators.systemd_service(
                     service_id=service_id,
                     application_dir=application_dir.as_posix(),
@@ -179,6 +187,7 @@ class Deployer:
                     mode=mode,
                 )
                 if not service_file_path.exists():
+                    self.logger.debug(f"creating service file: {service_file_path}")
                     success, message = self.write_file(
                         service_file_path, service_content
                     )
@@ -296,7 +305,6 @@ class Deployer:
             priv_url,
             pip_package_name,
         ]
-        print(f"args: {args}")
         result = subprocess.run(
             args, cwd=application_dir, capture_output=True, text=True
         )
