@@ -43,6 +43,7 @@ class Deployer:
             container.config.load()
             return container.config()
         elif provider == SecretsProvider.COLDRUNE:
+            self.logger.warning("coldrune as secrets provider isn't supported yet.")
             # TODO integrate coldrune
             return {}
         else:
@@ -83,23 +84,24 @@ class Deployer:
             except Exception as ex:
                 return False, str(ex)
 
-        try:
+        if "pg_conn_str" in env_vars_dict:
             self.run_database_migrations(
                 db_migrations_root_dir, env_vars_dict["pg_conn_str"]
             )
-        except Exception as ex:
-            return False, str(ex)
 
         if daemons is not None and len(daemons) > 0:
             systemd_units = [d for d in daemons if d.type == DaemonType.SYSTEMD]
             if len(systemd_units) > 0:
-                self.setup_systemd_units(
-                    daemons=systemd_units,
-                    project_code=project_code,
-                    mode=mode,
-                    os_user=os_user,
-                    os_group=os_groups[0],
-                )
+                try:
+                    self.setup_systemd_units(
+                        daemons=systemd_units,
+                        project_code=project_code,
+                        mode=mode,
+                        os_user=os_user,
+                        os_group=os_groups[0],
+                    )
+                except Exception as ex:
+                    return False, str(ex)
 
         return True, ""
 
@@ -124,6 +126,7 @@ class Deployer:
             py_exec, pip_exec = self.get_executables(self.get_venv_dir(application_dir))
             exec_start = f"{py_exec} -m {d.py_module_name}"
             if d.type == DaemonType.DOCKER:
+                self.logger.warning("docker based deployment isn't supported yet.")
                 # NOTE no support for docker deployments currently
                 continue
             if d.port:
@@ -235,26 +238,35 @@ class Deployer:
 
     def run_database_migrations(self, root_dir: Path, db_conn_str: str):
         db_migrations_dir = root_dir / "db" / "migrations"
-        if db_migrations_dir.exists():
-            args = [
-                "dbmate",
-                "--wait",
-                "--wait-timeout",
-                "10s",
-                "-d",
-                db_migrations_dir.as_posix(),
-                "up",
-            ]
-            result = subprocess.run(
-                args,
-                env=dict(os.environ, DATABASE_URL=db_conn_str),
-                capture_output=True,
-                text=True,
+        is_dir_exists = db_migrations_dir.exists()
+        if is_dir_exists is False:
+            self.logger.warning(
+                f"db migrations dir doesn't exists or unable to access: {db_migrations_dir.as_posix()}"
             )
-            if result.returncode != 0:
-                raise ValueError(f"failed to run db migrations: {result.stderr}")
-        self.logger.info("verified db migrations")
+            return False
 
+        args = [
+            "dbmate",
+            "--wait",
+            "--wait-timeout",
+            "10s",
+            "-d",
+            db_migrations_dir.as_posix(),
+            "up",
+        ]
+        result = subprocess.run(
+            args,
+            env=dict(os.environ, DATABASE_URL=db_conn_str),
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            self.logger.error(
+                f"failed to run db migrations: {result.stderr}, stderr: {result.stderr}, stdout: {result.stdout}"
+            )
+            return False
+
+        self.logger.info("verified db migrations")
         return True
 
     def install_pip_package(
@@ -284,6 +296,7 @@ class Deployer:
             priv_url,
             pip_package_name,
         ]
+        print(f"args: {args}")
         result = subprocess.run(
             args, cwd=application_dir, capture_output=True, text=True
         )
@@ -321,7 +334,7 @@ class Deployer:
     def verify_os_configuration(self, project_code: str, mode: str):
         os_user = project_code
         os_group = project_code
-        os_groups = (*self.os_groups,)
+        os_groups = (*self.os_groups, os_group)
 
         for group in os_groups:
             if not self.is_os_group_exists(group):
@@ -329,7 +342,9 @@ class Deployer:
                     ["groupadd", group], capture_output=True, text=True
                 )
                 if result.returncode != 0:
-                    raise ValueError(f"failed to create os group: {group}")
+                    raise ValueError(
+                        f"failed to create os group: {group} stderr: {result.stderr}, stdout: {result.stdout}"
+                    )
         self.logger.info(f"verified os groups: {','.join(os_groups)}")
 
         if not self.is_os_user_exists(os_user):
