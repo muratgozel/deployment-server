@@ -1,6 +1,6 @@
 from celery import Celery
 from celery.schedules import crontab
-from celery.signals import worker_init, worker_shutdown
+from celery.signals import worker_init, worker_shutdown, setup_logging
 from deployment_server.init import init
 from deployment_server.modules import env
 
@@ -12,6 +12,11 @@ def create_worker() -> Celery:
     container = WorkerContainer()
     worker = Celery("tasks", broker=container.config.rabbitmq_conn_str())
     worker.container = container
+
+    @setup_logging.connect
+    def config_loggers(*args, **kwargs):
+        # disable Celery's logging setup
+        pass
 
     @worker_init.connect
     def worker_init_handler(sender=None, **kwargs):
