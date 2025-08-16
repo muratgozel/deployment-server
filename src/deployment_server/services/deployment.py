@@ -47,12 +47,14 @@ class DeploymentService:
         self,
         project_rid: str,
         version: str,
+        mode: str,
         scheduled_to_run_at: datetime.datetime = None,
     ):
         deployment = Deployment(
             rid=Deployment.generate_rid(),
             project_rid=project_rid,
             version=version,
+            mode=mode,
             scheduled_to_run_at=scheduled_to_run_at,
         )
         status_update = DeploymentStatusUpdate(

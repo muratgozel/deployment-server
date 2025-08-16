@@ -80,7 +80,10 @@ async def deployment_create(
         )
 
     deployment = await deployment_service.create(
-        project_rid=project.rid, version=body.version, scheduled_to_run_at=None
+        project_rid=project.rid,
+        version=body.version,
+        mode=body.mode,
+        scheduled_to_run_at=None,
     )
 
     return deployment
