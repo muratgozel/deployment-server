@@ -6,15 +6,19 @@ from contextlib import asynccontextmanager, contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from deployment_server.modules.env import is_dev
 
 
 def init_logging(name: str, debug: bool = False):
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG if debug else logging.INFO)
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(
-        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    format_str = (
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        if is_dev()
+        else "%(levelname)s - %(message)s"
     )
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(logging.Formatter(format_str))
     logger.addHandler(stream_handler)
 
     yield logger

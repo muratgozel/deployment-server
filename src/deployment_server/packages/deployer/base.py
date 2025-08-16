@@ -7,10 +7,7 @@ import re
 import venv
 from logging import Logger
 from pathlib import Path
-from typing import Annotated
 from dependency_injector import containers, providers
-from dependency_injector.wiring import Provide
-from deployment_server.containers.worker import WorkerContainer
 from deployment_server.models import Daemon, DaemonType, SecretsProvider
 from deployment_server.packages.utils import modifiers, generators
 from deployment_server.containers.common import find_yaml_files
@@ -121,7 +118,7 @@ class Deployer:
 
         new_sockets = new_socket_services = new_services = existing_sockets = (
             existing_socket_services
-        ) = existing_services = []
+        ) = existing_services = set()
         for d in daemons:
             service_id = f"{self.get_application_id(project_code, mode)}-{d.name}"
             self.logger.debug(f"setting up unit {service_id}")
@@ -158,9 +155,9 @@ class Deployer:
                         raise ValueError(
                             f"failed to write systemd socket {socket_file_name}. error: {message}"
                         )
-                    new_sockets.append(service_id)
+                    new_sockets.add(service_id)
                 else:
-                    existing_sockets.append(service_id)
+                    existing_sockets.add(service_id)
                 if not service_file_path.exists():
                     self.logger.debug(f"creating service file: {service_file_path}")
                     success, message = self.write_file(
@@ -170,9 +167,9 @@ class Deployer:
                         raise ValueError(
                             f"failed to write systemd service {service_file_name}. error: {message}"
                         )
-                    new_socket_services.append(service_id)
+                    new_socket_services.add(service_id)
                 else:
-                    existing_socket_services.append(service_id)
+                    existing_socket_services.add(service_id)
             else:
                 service_file_name = f"{service_id}.service"
                 service_file_path = self.systemd_root_dir / service_file_name
@@ -195,11 +192,11 @@ class Deployer:
                         raise ValueError(
                             f"failed to write systemd service {service_file_name}. error: {message}"
                         )
-                    new_services.append(service_id)
+                    new_services.add(service_id)
                 else:
-                    existing_services.append(service_id)
+                    existing_services.add(service_id)
 
-        new_services_combined = [*new_sockets, *new_services]
+        new_services_combined = set([*new_sockets, *new_services])
 
         if len(new_services_combined) > 0:
             args = ["sudo", "systemctl", "enable", *new_services_combined]
@@ -214,9 +211,9 @@ class Deployer:
             if result.returncode != 0:
                 raise ValueError(f"failed to start new sockets. error: {result.stderr}")
 
-        if len([*new_services_combined, *new_socket_services]) > 0:
+        if len(set([*new_services_combined, *new_socket_services])) > 0:
             args = ["sudo", "systemctl", "daemon-reload"]
-            self.logger.debug(f"reloading daemon")
+            self.logger.debug("reloading daemon")
             result = subprocess.run(args, capture_output=True, text=True)
             if result.returncode != 0:
                 raise ValueError(
@@ -245,7 +242,7 @@ class Deployer:
             f"sudo systemctl status --no-pager f{' '.join([*new_sockets, *existing_sockets, *existing_services])}"
         )
         if stat != 0:
-            raise ValueError(f"some systemd units aren't running.")
+            raise ValueError("some systemd units aren't running.")
 
         return True
 
@@ -360,34 +357,30 @@ class Deployer:
         self.logger.info(f"verified os groups: {','.join(os_groups)}")
 
         if not self.is_os_user_exists(os_user):
-            try:
-                user_home = self.user_root_dir / os_user
-                user_groups = ",".join(os_groups)
-                args = [
-                    "useradd",
-                    "-d",
-                    user_home.as_posix(),
-                    "-m",
-                    "-s",
-                    "/bin/bash",
-                    "-g",
-                    os_group,
-                    "-G",
-                    user_groups,
-                    os_user,
-                ]
-                result = subprocess.run(args, capture_output=True, text=True)
-                if result.returncode != 0:
-                    raise ValueError(f"failed to create os user: {os_user}")
-                os.chmod(user_home, 0o750)
-                os.makedirs(user_home / ".ssh", exist_ok=True)
-                with open(user_home / ".ssh" / "authorized_keys", "w") as f:
-                    pass
-                os.chmod(user_home / ".ssh", 0o700)
-                os.chmod(user_home / ".ssh" / "authorized_keys", 0o600)
-            except Exception as ex:
-                self.logger.error(f"failed to create user {os_user}. error: {str(ex)}")
-                return False
+            user_home = self.user_root_dir / os_user
+            user_groups = ",".join(os_groups)
+            args = [
+                "useradd",
+                "-d",
+                user_home.as_posix(),
+                "-m",
+                "-s",
+                "/bin/bash",
+                "-g",
+                os_group,
+                "-G",
+                user_groups,
+                os_user,
+            ]
+            result = subprocess.run(args, capture_output=True, text=True)
+            if result.returncode != 0:
+                raise ValueError(f"failed to create os user: {os_user}")
+            os.chmod(user_home, 0o750)
+            os.makedirs(user_home / ".ssh", exist_ok=True)
+            with open(user_home / ".ssh" / "authorized_keys", "w"):
+                pass
+            os.chmod(user_home / ".ssh", 0o700)
+            os.chmod(user_home / ".ssh" / "authorized_keys", 0o600)
         self.logger.info(f"verified os user: {os_user}")
 
         application_dir = self.get_application_dir(project_code, mode)
