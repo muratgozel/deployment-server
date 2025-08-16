@@ -151,6 +151,8 @@ class Deployer:
                         exec_start=exec_start,
                         mode=mode,
                         port=d.port,
+                        os_user=os_user,
+                        os_group=os_group,
                     )
                 )
                 if not socket_file_path.exists():
@@ -187,6 +189,8 @@ class Deployer:
                     application_config_dir=application_config_dir.as_posix(),
                     exec_start=exec_start,
                     mode=mode,
+                    os_user=os_user,
+                    os_group=os_group,
                 )
                 if not service_file_path.exists():
                     self.logger.debug(f"creating service file: {service_file_path}")
@@ -227,7 +231,9 @@ class Deployer:
 
         if len(existing_socket_services) > 0:
             args = ["sudo", "systemctl", "restart", *existing_socket_services]
-            self.logger.debug(f"restarting existing sockets: {args}")
+            self.logger.debug(
+                f"restarting existing sockets: {existing_socket_services}"
+            )
             result = subprocess.run(args, capture_output=True, text=True)
             if result.returncode != 0:
                 raise ValueError(
@@ -236,7 +242,7 @@ class Deployer:
 
         if len(existing_services) > 0:
             args = ["sudo", "systemctl", "reload", *existing_services]
-            self.logger.debug(f"reloading existing services: {args}")
+            self.logger.debug(f"reloading existing services: {existing_services}")
             result = subprocess.run(args, capture_output=True, text=True)
             if result.returncode != 0:
                 raise ValueError(
@@ -244,7 +250,7 @@ class Deployer:
                 )
 
         stat = os.system(
-            f"sudo systemctl status --no-pager f{' '.join([*new_sockets, *existing_sockets, *existing_services])}"
+            f"sudo systemctl status --no-pager {' '.join(set([*new_sockets, *existing_sockets, *existing_services]))}"
         )
         if stat != 0:
             raise ValueError("some systemd units aren't running.")

@@ -21,7 +21,8 @@ Description={{ service_id }} service.
 
 [Service]
 Type=exec
-DynamicUser=yes
+User={{ user }}
+Group={{ group }}
 WorkingDirectory={{ application_dir }}
 Environment=PYTHONPATH={{ application_dir }}
 Environment=PYTHONUNBUFFERED=1
@@ -69,7 +70,7 @@ WantedBy=multi-user.target
 """
 
 
-template_service_old = """\
+template_service = """\
 [Unit]
 Description={{ service_id }} service.
 Requires=network.target
@@ -79,51 +80,6 @@ After=network.target
 Type=exec
 User={{ user }}
 Group={{ group }}
-WorkingDirectory={{ application_dir }}
-Environment=PYTHONPATH={{ application_dir }}
-Environment=PYTHONUNBUFFERED=1
-Environment=DEBUG=0
-Environment=APPLICATION_MODE={{ mode }}
-Environment=APPLICATION_CONFIG_DIR={{ application_config_dir }}
-ExecStart={{ exec_start }}
-ExecReload=/bin/kill -HUP $MAINPID
-KillSignal=SIGTERM
-Restart=always
-RestartSec=5
-TimeoutStartSec=30
-TimeoutStopSec=30
-
-# security hardening
-NoNewPrivileges=yes
-PrivateTmp=yes
-ProtectSystem=strict
-ProtectHome=yes
-BindReadOnlyPaths={{ application_config_dir }}
-ReadWritePaths={{ application_logs_dir }} {{ application_data_dir }}
-
-# resource limits
-LimitNOFILE=65536
-MemoryMax=2G
-
-# logging
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier={{ service_id }}
-
-[Install]
-WantedBy=multi-user.target
-"""
-
-
-template_service = """\
-[Unit]
-Description={{ service_id }} service.
-Requires=network.target
-After=network.target
-
-[Service]
-Type=exec
-DynamicUser=yes
 WorkingDirectory={{ application_dir }}
 Environment=PYTHONPATH={{ application_dir }}
 Environment=PYTHONUNBUFFERED=1
@@ -351,6 +307,8 @@ def systemd_service_with_socket(
     mode: str,
     exec_start: str,
     port: str | int,
+    os_user: str,
+    os_group: str,
 ):
     template = jinja2.Environment(
         loader=jinja2.BaseLoader(), keep_trailing_newline=True, lstrip_blocks=True
@@ -376,6 +334,8 @@ def systemd_service_with_socket(
         write_paths=write_paths,
         mode=mode,
         exec_start=exec_start,
+        user=os_user,
+        group=os_group,
     )
 
     template = jinja2.Environment(
@@ -393,6 +353,8 @@ def systemd_service(
     application_config_dir: str,
     mode: str,
     exec_start: str,
+    os_user: str,
+    os_group: str,
 ):
     template = jinja2.Environment(
         loader=jinja2.BaseLoader(), keep_trailing_newline=True, lstrip_blocks=True
@@ -418,6 +380,8 @@ def systemd_service(
         write_paths=write_paths,
         mode=mode,
         exec_start=exec_start,
+        user=os_user,
+        group=os_group,
     )
 
 
