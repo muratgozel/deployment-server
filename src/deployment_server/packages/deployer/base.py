@@ -116,18 +116,23 @@ class Deployer:
         application_logs_dir = self.get_application_logs_dir(project_code, mode)
         application_data_dir = self.get_application_data_dir(project_code, mode)
 
-        new_sockets = new_socket_services = new_services = existing_sockets = (
-            existing_socket_services
-        ) = existing_services = set()
+        new_sockets = set()
+        new_socket_services = set()
+        new_services = set()
+        existing_sockets = set()
+        existing_socket_services = set()
+        existing_services = set()
         for d in daemons:
             service_id = f"{self.get_application_id(project_code, mode)}-{d.name}"
             self.logger.debug(f"setting up unit {service_id}")
             py_exec, pip_exec = self.get_executables(self.get_venv_dir(application_dir))
             exec_start = f"{py_exec} -m {d.py_module_name}"
+
             if d.type == DaemonType.DOCKER:
                 self.logger.warning("docker based deployment isn't supported yet.")
                 # NOTE no support for docker deployments currently
                 continue
+
             if d.port:
                 socket_file_name = f"{service_id}.socket"
                 service_file_name = f"{service_id}.service"
@@ -200,7 +205,7 @@ class Deployer:
 
         if len(new_services_combined) > 0:
             args = ["sudo", "systemctl", "enable", *new_services_combined]
-            self.logger.debug(f"enabling new services: {args}")
+            self.logger.debug(f"enabling new services: {new_services_combined}")
             result = subprocess.run(args, capture_output=True, text=True)
             if result.returncode != 0:
                 raise ValueError(
