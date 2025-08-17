@@ -136,11 +136,12 @@ class Deployer:
             if d.port:
                 socket_file_name = f"{service_id}.socket"
                 service_file_name = f"{service_id}.service"
-                self.logger.debug(f"this is an http service")
+                self.logger.debug("this is an http service")
                 socket_file_path = self.systemd_root_dir / socket_file_name
                 service_file_path = self.systemd_root_dir / service_file_name
                 self.logger.debug(f"socket file: {socket_file_path}")
                 self.logger.debug(f"service file: {service_file_path}")
+                exec_start = f"{exec_start} --port {d.port}"
                 service_content, socket_content = (
                     generators.systemd_service_with_socket(
                         service_id=service_id,
