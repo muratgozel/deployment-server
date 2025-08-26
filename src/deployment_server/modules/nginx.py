@@ -42,7 +42,7 @@ def setup_proxy_host(
             "<server_name>", primary_server_name
         )
         if primary_server_name_alt is not None:
-            ssl_cert_fullchain_file_alt = ssl_cert_fullchain_file.replace(
+            ssl_cert_fullchain_file_alt = template_ssl_cert_fullchain_file.replace(
                 "<server_name>", primary_server_name_alt
             )
 
@@ -52,7 +52,7 @@ def setup_proxy_host(
             "<server_name>", primary_server_name
         )
         if primary_server_name_alt is not None:
-            ssl_cert_key_file_alt = ssl_cert_fullchain_file.replace(
+            ssl_cert_key_file_alt = template_ssl_cert_key_file.replace(
                 "<server_name>", primary_server_name_alt
             )
 
