@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.5.29](https://github.com/muratgozel/deployment-server/compare/c85923a4db559693769fc86588d96f23567b1d28..0.5.29) - 2025-08-26
+#### Bug Fixes
+- nginx host setup with fallback to alt domain - ([c85923a](https://github.com/muratgozel/deployment-server/commit/c85923a4db559693769fc86588d96f23567b1d28)) - Murat Gözel
+
+- - -
+
 ## [0.5.28](https://github.com/muratgozel/deployment-server/compare/8991cf8469eca5c556c2b4694935894eeaca1b09..0.5.28) - 2025-08-17
 #### Bug Fixes
 - systemd exec start - ([8991cf8](https://github.com/muratgozel/deployment-server/commit/8991cf8469eca5c556c2b4694935894eeaca1b09)) - Murat Gözel
