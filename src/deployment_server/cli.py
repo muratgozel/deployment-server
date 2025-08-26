@@ -1,7 +1,7 @@
 import os
 import sys
 import click
-from deployment_server.modules import acme, nginx, env
+from deployment_server.modules import acme, nginx
 
 
 @click.group()
