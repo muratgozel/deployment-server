@@ -22,7 +22,7 @@ def main():
 @click.option(
     "--reload-cmd",
     required=False,
-    default="service nginx reload",
+    default="'service nginx reload'",
     show_default=True,
     help="The command to execute after renewing ssl certs.",
 )

@@ -123,7 +123,7 @@ def setup_ssl_certs(
     return True, ""
 
 
-def remove_ssl_certs_renewal(domains: tuple[str, ...], acme_bin_dir: str):
+def remove_ssl_certs_acme(domains: tuple[str, ...], acme_bin_dir: str, revoke: bool):
     args_domain = []
     for domain in domains:
         args_domain.append("-d")
@@ -138,6 +138,8 @@ def remove_ssl_certs_renewal(domains: tuple[str, ...], acme_bin_dir: str):
         }
     )
     args = ["./acme.sh", "--remove", *args_domain]
+    if revoke:
+        args.append("--revoke")
     result = subprocess.run(
         args,
         env=env_vars,
@@ -169,58 +171,18 @@ def remove_ssl_certs_from_filesystem(domains: tuple[str, ...], acme_data_dir: st
     return True, ""
 
 
-def revoke_ssl_certs(domains: tuple[str, ...], acme_bin_dir: str):
-    args_domain = []
-    for domain in domains:
-        args_domain.append("-d")
-        args_domain.append(domain)
-
-    env_vars = os.environ.copy()
-    env_vars.update(
-        {
-            "AUTO_UPGRADE": "0",
-            "ACME_DIRECTORY": acme_bin_dir,
-            "LE_WORKING_DIR": acme_bin_dir,
-        }
-    )
-    args = ["./acme.sh", "--revoke", *args_domain, "--revoke-reason", "0"]
-    result = subprocess.run(
-        args,
-        env=env_vars,
-        cwd=acme_bin_dir,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        universal_newlines=True,
-    )
-    if env.is_debugging():
-        click.echo(f"revoke command: {" ".join(args)}")
-        click.echo(f"revoke command result: {result.stdout}")
-    if result.returncode != 0:
-        message = "failed to revoke."
-        if not env.is_debugging():
-            message += f" error: {result.stdout}"
-        return False, message
-    return True, ""
-
-
 def remove_ssl_certs(
     domains: tuple[str, ...], revoke: bool, acme_bin_dir: str, acme_data_dir: str
 ):
     if len(domains) == 0:
         return False, "no domains provided"
 
-    success, message = remove_ssl_certs_renewal(domains, acme_bin_dir)
+    success, message = remove_ssl_certs_acme(domains, acme_bin_dir, revoke)
     if not success:
         return success, message
 
     success, message = remove_ssl_certs_from_filesystem(domains, acme_data_dir)
     if not success:
         return success, message
-
-    if revoke is True:
-        success, message = revoke_ssl_certs(domains, acme_bin_dir)
-        if not success:
-            return success, message
 
     return True, ""
