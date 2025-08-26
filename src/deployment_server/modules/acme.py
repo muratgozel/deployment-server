@@ -31,7 +31,15 @@ def issue_ssl_certs(domains: tuple[str, ...], dns_provider: str, acme_bin_dir: s
             "LE_WORKING_DIR": acme_bin_dir,
         }
     )
-    args = ["./acme.sh", "--issue", *args_domain, "--dns", f"dns_{dns_provider}"]
+    args = [
+        "./acme.sh",
+        "--issue",
+        *args_domain,
+        "--dns",
+        f"dns_{dns_provider}",
+        "--server",
+        "zerossl",
+    ]
     result = subprocess.run(
         args,
         env=env_vars,
