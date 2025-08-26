@@ -46,7 +46,7 @@ def issue_ssl_certs(domains: tuple[str, ...], dns_provider: str, acme_bin_dir: s
         click.echo(f"issue command result: {result.stdout}")
     if result.returncode != 0:
         message = "failed to issue certs."
-        if env.is_debugging():
+        if not env.is_debugging():
             message += f" error: {result.stdout}"
     return True, ""
 
@@ -68,7 +68,7 @@ def install_ssl_certs(
     )
     args = [
         "./acme.sh",
-        "--install",
+        "--install-cert",
         "-d",
         primary_domain,
         "--key-file",
@@ -92,7 +92,7 @@ def install_ssl_certs(
         click.echo(f"install command result: {result.stdout}")
     if result.returncode != 0:
         message = "failed to install certs."
-        if env.is_debugging():
+        if not env.is_debugging():
             message += f" error: {result.stdout}"
         return False, message
     return True, ""
@@ -152,7 +152,7 @@ def remove_ssl_certs_renewal(domains: tuple[str, ...], acme_bin_dir: str):
         click.echo(f"remove command result: {result.stdout}")
     if result.returncode != 0:
         message = "failed to remove."
-        if env.is_debugging():
+        if not env.is_debugging():
             message += f" error: {result.stdout}"
         return False, message
     return True, ""
@@ -198,7 +198,7 @@ def revoke_ssl_certs(domains: tuple[str, ...], acme_bin_dir: str):
         click.echo(f"revoke command result: {result.stdout}")
     if result.returncode != 0:
         message = "failed to revoke."
-        if env.is_debugging():
+        if not env.is_debugging():
             message += f" error: {result.stdout}"
         return False, message
     return True, ""
