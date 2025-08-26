@@ -26,7 +26,10 @@ def issue_ssl_certs(domains: tuple[str, ...], dns_provider: str, acme_bin_dir: s
     click.echo(f"setting up ssl certs... issuing command: {" ".join(args)}")
     result = subprocess.run(args, cwd=acme_bin_dir, capture_output=True, text=True)
     if result.returncode != 0:
-        return False, f"failed to issue ssl certs: {result.stderr}"
+        return (
+            False,
+            f"failed to issue ssl certs. stderr: {result.stderr} stdout: {result.stdout}",
+        )
 
     return True, ""
 
@@ -53,7 +56,10 @@ def install_ssl_certs(
     click.echo(f"setting up ssl certs... install command: {" ".join(args)}")
     result = subprocess.run(args, cwd=acme_bin_dir, capture_output=True, text=True)
     if result.returncode != 0:
-        return False, f"failed to install ssl certs: {result.stderr}"
+        return (
+            False,
+            f"failed to install ssl certs. stderr: {result.stderr} stdout: {result.stdout}",
+        )
     return True, ""
 
 
