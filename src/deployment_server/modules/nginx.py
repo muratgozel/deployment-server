@@ -31,22 +31,45 @@ def setup_proxy_host(
         return False, f"invalid upstream name: {upstream_name}"
 
     primary_server_name = server_names[0]
+    primary_server_name_alt = None
+    _arr = primary_server_name.split(".")
+    if len(_arr) > 1:
+        primary_server_name_alt = ".".join(_arr[1:])
 
+    ssl_cert_fullchain_file_alt = None
     if ssl_cert_fullchain_file == template_ssl_cert_fullchain_file:
         ssl_cert_fullchain_file = ssl_cert_fullchain_file.replace(
             "<server_name>", primary_server_name
         )
+        if primary_server_name_alt is not None:
+            ssl_cert_fullchain_file_alt = ssl_cert_fullchain_file.replace(
+                "<server_name>", primary_server_name_alt
+            )
 
+    ssl_cert_key_file_alt = None
     if ssl_cert_key_file == template_ssl_cert_key_file:
         ssl_cert_key_file = ssl_cert_key_file.replace(
             "<server_name>", primary_server_name
         )
+        if primary_server_name_alt is not None:
+            ssl_cert_key_file_alt = ssl_cert_fullchain_file.replace(
+                "<server_name>", primary_server_name_alt
+            )
 
     if not os.path.exists(ssl_cert_fullchain_file):
-        return False, f"ssl cert fullchain file not found: {ssl_cert_fullchain_file}"
+        if ssl_cert_fullchain_file_alt is not None:
+            ssl_cert_fullchain_file = ssl_cert_fullchain_file_alt
+        else:
+            return (
+                False,
+                f"ssl cert fullchain file not found: {ssl_cert_fullchain_file}",
+            )
 
     if not os.path.exists(ssl_cert_key_file):
-        return False, f"ssl cert key file not found: {ssl_cert_key_file}"
+        if ssl_cert_key_file_alt is not None:
+            ssl_cert_key_file = ssl_cert_key_file_alt
+        else:
+            return False, f"ssl cert key file not found: {ssl_cert_key_file}"
 
     server_names_text = " ".join(server_names)
     upstream_servers_text = ""

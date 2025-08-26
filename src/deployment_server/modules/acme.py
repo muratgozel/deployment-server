@@ -2,6 +2,7 @@ import subprocess
 import enum
 import os
 import shutil
+import click
 from pathlib import Path
 
 
@@ -22,6 +23,7 @@ def issue_ssl_certs(domains: tuple[str, ...], dns_provider: str, acme_bin_dir: s
         return False, f"invalid dns provider: {dns_provider}"
 
     args = ["./acme.sh", "--issue", *args_domain, "--dns", f"dns_{dns_provider}"]
+    click.echo(f"setting up ssl certs... issuing command: {" ".join(args)}")
     result = subprocess.run(args, cwd=acme_bin_dir, capture_output=True, text=True)
     if result.returncode != 0:
         return False, f"failed to issue ssl certs: {result.stderr}"
@@ -48,6 +50,7 @@ def install_ssl_certs(
         "--reloadcmd",
         reload_cmd,
     ]
+    click.echo(f"setting up ssl certs... install command: {" ".join(args)}")
     result = subprocess.run(args, cwd=acme_bin_dir, capture_output=True, text=True)
     if result.returncode != 0:
         return False, f"failed to install ssl certs: {result.stderr}"
@@ -65,6 +68,7 @@ def setup_ssl_certs(
         return False, "no domains provided"
 
     primary_domain = domains[0]
+    click.echo(f"setting up ssl certs... primary domain: {primary_domain}")
     success, message = issue_ssl_certs(domains, dns_provider, acme_bin_dir)
     if not success:
         return success, message
