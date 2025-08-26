@@ -1,7 +1,7 @@
 import os
 import sys
 import click
-from deployment_server.modules import acme, nginx
+from deployment_server.modules import acme, nginx, env
 
 
 @click.group()
@@ -33,8 +33,14 @@ def main():
     show_default=True,
     help="The directory where acme.sh is installed.",
 )
+@click.option("--debug/--no-debug", default=False, help="Enable debugging.")
 def setup_ssl_certs(
-    domain: tuple[str], dns: str, ssl_root_dir: str, reload_cmd: str, acme_bin_dir: str
+    domain: tuple[str],
+    dns: str,
+    ssl_root_dir: str,
+    reload_cmd: str,
+    acme_bin_dir: str,
+    debug: bool,
 ):
     """
     Issue and install ssl certificates for the given domains.
@@ -42,6 +48,8 @@ def setup_ssl_certs(
     DOMAIN is the list of domains to acquire ssl certificates.
     """
     click.echo("setting up ssl certs...")
+    if debug:
+        os.environ["DEBUG"] = "1"
     success, message = acme.setup_ssl_certs(
         domains=domain,
         dns_provider=dns,
@@ -74,8 +82,9 @@ def setup_ssl_certs(
     show_default=True,
     help="The directory where acme.sh stores its data.",
 )
+@click.option("--debug/--no-debug", default=False, help="Enable debugging.")
 def remove_ssl_certs(
-    domain: tuple[str], revoke: bool, acme_bin_dir: str, acme_data_dir: str
+    domain: tuple[str], revoke: bool, acme_bin_dir: str, acme_data_dir: str, debug: bool
 ):
     """
     Remove ssl certificates for the given domains.
@@ -83,7 +92,8 @@ def remove_ssl_certs(
     DOMAIN is the list of domains to remove the ssl certificates.
     """
     click.echo("removing ssl certs...")
-
+    if debug:
+        os.environ["DEBUG"] = "1"
     success, message = acme.remove_ssl_certs(
         domain, revoke, acme_bin_dir, acme_data_dir
     )

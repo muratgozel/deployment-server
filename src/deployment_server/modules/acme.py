@@ -4,6 +4,7 @@ import os
 import shutil
 import click
 from pathlib import Path
+from deployment_server.modules import env
 
 
 class DnsProvider(enum.Enum):
@@ -23,13 +24,19 @@ def issue_ssl_certs(domains: tuple[str, ...], dns_provider: str, acme_bin_dir: s
         return False, f"invalid dns provider: {dns_provider}"
 
     args = ["./acme.sh", "--issue", *args_domain, "--dns", f"dns_{dns_provider}"]
-    click.echo(f"setting up ssl certs... issuing command: {" ".join(args)}")
     result = subprocess.run(args, cwd=acme_bin_dir, capture_output=True, text=True)
+    if env.is_debugging():
+        click.echo(f"issue command: {" ".join(args)}")
+        click.echo(f"stderr: {result.stderr}")
+        click.echo(f"stdout: {result.stderr}")
     if result.returncode != 0:
-        return (
-            False,
-            f"failed to issue ssl certs. stderr: {result.stderr} stdout: {result.stdout}",
-        )
+        if env.is_debugging():
+            return False, "failed to issue ssl certs."
+        else:
+            return (
+                False,
+                f"failed to issue ssl certs. stderr: {result.stderr} stdout: {result.stdout}",
+            )
 
     return True, ""
 
@@ -53,13 +60,19 @@ def install_ssl_certs(
         "--reloadcmd",
         reload_cmd,
     ]
-    click.echo(f"setting up ssl certs... install command: {" ".join(args)}")
     result = subprocess.run(args, cwd=acme_bin_dir, capture_output=True, text=True)
+    if env.is_debugging():
+        click.echo(f"install command: {" ".join(args)}")
+        click.echo(f"stderr: {result.stderr}")
+        click.echo(f"stdout: {result.stderr}")
     if result.returncode != 0:
-        return (
-            False,
-            f"failed to install ssl certs. stderr: {result.stderr} stdout: {result.stdout}",
-        )
+        if env.is_debugging():
+            return False, "failed to install ssl certs."
+        else:
+            return (
+                False,
+                f"failed to install ssl certs. stderr: {result.stderr} stdout: {result.stdout}",
+            )
     return True, ""
 
 
@@ -96,9 +109,18 @@ def remove_ssl_certs_renewal(domains: tuple[str, ...], acme_bin_dir: str):
 
     args = ["./acme.sh", "--remove", *args_domain]
     result = subprocess.run(args, cwd=acme_bin_dir, capture_output=True, text=True)
+    if env.is_debugging():
+        click.echo(f"remove command: {" ".join(args)}")
+        click.echo(f"stderr: {result.stderr}")
+        click.echo(f"stdout: {result.stderr}")
     if result.returncode != 0:
-        return False, f"failed to issue ssl certs: {result.stderr}"
-
+        if env.is_debugging():
+            return False, "failed to remove ssl certs."
+        else:
+            return (
+                False,
+                f"failed to remove ssl certs. stderr: {result.stderr} stdout: {result.stdout}",
+            )
     return True, ""
 
 
@@ -121,8 +143,18 @@ def revoke_ssl_certs(domains: tuple[str, ...], acme_bin_dir: str):
 
     args = ["./acme.sh", "--revoke", *args_domain, "--revoke-reason", "0"]
     result = subprocess.run(args, cwd=acme_bin_dir, capture_output=True, text=True)
+    if env.is_debugging():
+        click.echo(f"revoke command: {" ".join(args)}")
+        click.echo(f"stderr: {result.stderr}")
+        click.echo(f"stdout: {result.stderr}")
     if result.returncode != 0:
-        return False, f"failed to revoke ssl certs: {result.stderr}"
+        if env.is_debugging():
+            return False, "failed to revoke ssl certs."
+        else:
+            return (
+                False,
+                f"failed to revoke ssl certs. stderr: {result.stderr} stdout: {result.stdout}",
+            )
 
     return True, ""
 
