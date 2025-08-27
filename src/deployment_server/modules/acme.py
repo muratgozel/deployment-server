@@ -50,7 +50,6 @@ def issue_ssl_certs(domains: tuple[str, ...], dns_provider: str, acme_bin_dir: s
         stderr=subprocess.STDOUT,
         text=True,
         universal_newlines=True,
-        shell=True,
     )
     if env.is_debugging():
         click.echo(f"issue command: {" ".join(args)}")
@@ -89,7 +88,7 @@ def install_ssl_certs(
         "--reloadcmd",
         reload_cmd,
         "--config-home",
-        "/root/acme.sh",
+        acme_bin_dir,
     ]
     result = subprocess.run(
         args,
@@ -150,7 +149,7 @@ def remove_ssl_certs_acme(domains: tuple[str, ...], acme_bin_dir: str, revoke: b
             "LE_WORKING_DIR": acme_bin_dir,
         }
     )
-    args = ["./acme.sh", "--remove", "--config-home", "/root/acme.sh", *args_domain]
+    args = ["./acme.sh", "--remove", "--config-home", acme_bin_dir, *args_domain]
     if revoke:
         args.append("--revoke")
     result = subprocess.run(
