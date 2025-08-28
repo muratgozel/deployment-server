@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.5.42](https://github.com/muratgozel/deployment-server/compare/0b85041528ee1da9c132b24dfe555478b410d8af..0.5.42) - 2025-08-28
+#### Bug Fixes
+- reload command on ssl cert renewal (3) - ([0b85041](https://github.com/muratgozel/deployment-server/commit/0b85041528ee1da9c132b24dfe555478b410d8af)) - Murat Gözel
+
+- - -
+
 ## [0.5.41](https://github.com/muratgozel/deployment-server/compare/c4a263414ae51721d87076c9cc9bc8c2f9612ffe..0.5.41) - 2025-08-28
 #### Bug Fixes
 - reload command on ssl cert renewal (2) - ([c4a2634](https://github.com/muratgozel/deployment-server/commit/c4a263414ae51721d87076c9cc9bc8c2f9612ffe)) - Murat Gözel
