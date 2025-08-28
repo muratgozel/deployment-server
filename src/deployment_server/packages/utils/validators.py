@@ -1,5 +1,20 @@
 import re
 from urllib.parse import urlparse
+import shutil
+
+
+def program_doesnt_exist(program_name):
+    """
+    Check if a program doesn't exist in the system PATH.
+
+    Args:
+        program_name (str): Name of the program to check
+
+    Returns:
+        bool: True if program doesn't exist, False if it does exist
+    """
+    # shutil.which() returns the path if found, None if not found
+    return shutil.which(program_name) is None
 
 
 def url_pydantic(value: str):

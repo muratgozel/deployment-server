@@ -2,9 +2,8 @@ import subprocess
 import enum
 import os
 import shutil
-import click
 from pathlib import Path
-from deployment_server.modules import env
+from logging import Logger
 
 
 class DnsProvider(enum.Enum):
@@ -12,7 +11,13 @@ class DnsProvider(enum.Enum):
     GANDI = "gandi_livedns"
 
 
-def issue_ssl_certs(domains: tuple[str, ...], dns_provider: str, acme_bin_dir: str):
+def issue_ssl_certs(
+    domains: tuple[str, ...],
+    dns_provider: str,
+    acme_bin: str,
+    acme_home: str,
+    logger: Logger,
+):
     args_domain = []
     for domain in domains:
         args_domain.append("-d")
@@ -23,16 +28,9 @@ def issue_ssl_certs(domains: tuple[str, ...], dns_provider: str, acme_bin_dir: s
     except ValueError:
         return False, f"invalid dns provider: {dns_provider}"
 
-    env_vars = os.environ.copy()
-    env_vars.update(
-        {
-            "AUTO_UPGRADE": "0",
-            "ACME_DIRECTORY": acme_bin_dir,
-            "LE_WORKING_DIR": acme_bin_dir,
-        }
-    )
+    logger.info("verifying ownership of domains. please wait...")
     args = [
-        "./acme.sh",
+        acme_bin,
         "--issue",
         *args_domain,
         "--dns",
@@ -40,44 +38,38 @@ def issue_ssl_certs(domains: tuple[str, ...], dns_provider: str, acme_bin_dir: s
         "--server",
         "zerossl",
         "--config-home",
-        acme_bin_dir,
+        acme_home,
     ]
     result = subprocess.run(
         args,
-        env=env_vars,
-        cwd=acme_bin_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
         universal_newlines=True,
     )
-    if env.is_debugging():
-        click.echo(f"issue command: {" ".join(args)}")
-        click.echo(f"issue command result: {result.stdout}")
+    logger.debug(f"issue command: {" ".join(args)}")
+    logger.debug(f"issue command result: {result.stdout}")
     if result.returncode != 0:
-        message = "failed to issue certs."
-        if not env.is_debugging():
-            message += f" error: {result.stdout}"
+        return False, f"failed. error details: {result.stdout}"
+    logger.info("certificates issued successfully.")
     return True, ""
 
 
 def install_ssl_certs(
-    primary_domain: str, ssl_root_dir: str, reload_cmd: str, acme_bin_dir: str
+    primary_domain: str,
+    ssl_root_dir: str,
+    reload_cmd: str,
+    acme_bin: str,
+    acme_home: str,
+    logger: Logger,
 ):
     ssl_certs_dir = Path(ssl_root_dir) / primary_domain
     os.makedirs(ssl_certs_dir, exist_ok=True)
     key_file = ssl_certs_dir / "key.pem"
     fullchain_file = ssl_certs_dir / "fullchain.pem"
-    env_vars = os.environ.copy()
-    env_vars.update(
-        {
-            "AUTO_UPGRADE": "0",
-            "ACME_DIRECTORY": acme_bin_dir,
-            "LE_WORKING_DIR": acme_bin_dir,
-        }
-    )
+    logger.info("installing issued certificates.")
     args = [
-        "./acme.sh",
+        acme_bin,
         "--install-cert",
         "-d",
         primary_domain,
@@ -88,25 +80,20 @@ def install_ssl_certs(
         "--reloadcmd",
         reload_cmd,
         "--config-home",
-        acme_bin_dir,
+        acme_home,
     ]
     result = subprocess.run(
         args,
-        env=env_vars,
-        cwd=acme_bin_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
         universal_newlines=True,
     )
-    if env.is_debugging():
-        click.echo(f"install command: {" ".join(args)}")
-        click.echo(f"install command result: {result.stdout}")
+    logger.debug(f"install command: {" ".join(args)}")
+    logger.debug(f"install command result: {result.stdout}")
     if result.returncode != 0:
-        message = "failed to install certs."
-        if not env.is_debugging():
-            message += f" error: {result.stdout}"
-        return False, message
+        return False, f"failed. error details: {result.stdout}"
+    logger.info("certificates installed successfully.")
     return True, ""
 
 
@@ -115,19 +102,24 @@ def setup_ssl_certs(
     dns_provider: str,
     ssl_root_dir: str,
     reload_cmd: str,
-    acme_bin_dir: str,
+    acme_bin: str,
+    acme_home: str,
+    logger: Logger,
 ):
     if len(domains) == 0:
         return False, "no domains provided"
 
     primary_domain = domains[0]
-    click.echo(f"setting up ssl certs... primary domain: {primary_domain}")
-    success, message = issue_ssl_certs(domains, dns_provider, acme_bin_dir)
+    logger.info(f"primary domain is {primary_domain}")
+
+    success, message = issue_ssl_certs(
+        domains, dns_provider, acme_bin, acme_home, logger
+    )
     if not success:
         return success, message
 
     success, message = install_ssl_certs(
-        primary_domain, ssl_root_dir, reload_cmd, acme_bin_dir
+        primary_domain, ssl_root_dir, reload_cmd, acme_bin, acme_home, logger
     )
     if not success:
         return success, message
@@ -135,66 +127,50 @@ def setup_ssl_certs(
     return True, ""
 
 
-def remove_ssl_certs_acme(domains: tuple[str, ...], acme_bin_dir: str, revoke: bool):
+def remove_ssl_certs(
+    domains: tuple[str, ...],
+    revoke: bool,
+    ssl_root_dir: str,
+    acme_bin: str,
+    acme_home: str,
+    logger: Logger,
+):
+    if len(domains) == 0:
+        return False, "no domains provided"
+
     args_domain = []
     for domain in domains:
         args_domain.append("-d")
         args_domain.append(domain)
+    primary_domain = domains[0]
+    logger.info(f"primary domain is {primary_domain}")
 
-    env_vars = os.environ.copy()
-    env_vars.update(
-        {
-            "AUTO_UPGRADE": "0",
-            "ACME_DIRECTORY": acme_bin_dir,
-            "LE_WORKING_DIR": acme_bin_dir,
-        }
-    )
-    args = ["./acme.sh", "--remove", "--config-home", acme_bin_dir, *args_domain]
+    args = [acme_bin, "--remove", "--config-home", acme_home, *args_domain]
     if revoke:
+        logger.info("will also revoke certificates.")
         args.append("--revoke")
     result = subprocess.run(
         args,
-        env=env_vars,
-        cwd=acme_bin_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
         universal_newlines=True,
     )
-    if env.is_debugging():
-        click.echo(f"remove command: {" ".join(args)}")
-        click.echo(f"remove command result: {result.stdout}")
+    logger.debug(f"remove command: {" ".join(args)}")
+    logger.debug(f"remove command result: {result.stdout}")
     if result.returncode != 0:
-        message = "failed to remove."
-        if not env.is_debugging():
-            message += f" error: {result.stdout}"
-        return False, message
-    return True, ""
+        return False, f"failed. error details: {result.stdout}"
+    logger.info("removed from acme client.")
 
-
-def remove_ssl_certs_from_filesystem(domains: tuple[str, ...], acme_data_dir: str):
+    # remove from filesystem too
     for domain in domains:
-        dir1 = Path(acme_data_dir) / domain
-        dir2 = Path(acme_data_dir) / f"{domain}_ecc"
+        dir1 = Path(acme_home) / domain
+        dir2 = Path(acme_home) / f"{domain}_ecc"
         if dir1.exists(follow_symlinks=False):
             shutil.rmtree(dir1)
         if dir2.exists(follow_symlinks=False):
             shutil.rmtree(dir2)
-    return True, ""
-
-
-def remove_ssl_certs(
-    domains: tuple[str, ...], revoke: bool, acme_bin_dir: str, acme_data_dir: str
-):
-    if len(domains) == 0:
-        return False, "no domains provided"
-
-    success, message = remove_ssl_certs_acme(domains, acme_bin_dir, revoke)
-    if not success:
-        return success, message
-
-    success, message = remove_ssl_certs_from_filesystem(domains, acme_data_dir)
-    if not success:
-        return success, message
-
+    ssl_certs_dir = Path(ssl_root_dir) / primary_domain
+    shutil.rmtree(ssl_certs_dir)
+    logger.info("removed from the filesystem.")
     return True, ""

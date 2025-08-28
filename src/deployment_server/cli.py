@@ -1,7 +1,21 @@
 import os
 import sys
 import click
+import logging
 from deployment_server.modules import acme, nginx
+from deployment_server.packages.utils import validators
+from deployment_server.modules import env
+
+
+def init_logging(name: str, debug: bool = False):
+    app_name = "deployer"
+    logger = logging.getLogger(f"{app_name} - {name}")
+    logger.setLevel(logging.DEBUG if debug else logging.INFO)
+    log_format = "%(levelname)s - %(name)s - %(message)s"
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(logging.Formatter(log_format))
+    logger.addHandler(stream_handler)
+    return logger
 
 
 @click.group()
@@ -27,11 +41,18 @@ def main():
     help="The command to execute after renewing ssl certs.",
 )
 @click.option(
-    "--acme-bin-dir",
+    "--acme-bin-path",
     required=False,
-    default=os.path.expanduser("~/acme.sh"),
+    default=os.path.expanduser("~/.acme.sh/acme.sh"),
     show_default=True,
     help="The directory where acme.sh is installed.",
+)
+@click.option(
+    "--acme-home-path",
+    required=False,
+    default=os.path.expanduser("~/.acme.sh"),
+    show_default=True,
+    help="The directory where acme.sh keeps its configuration.",
 )
 @click.option("--debug/--no-debug", default=False, help="Enable debugging.")
 def setup_ssl_certs(
@@ -39,7 +60,8 @@ def setup_ssl_certs(
     dns: str,
     ssl_root_dir: str,
     reload_cmd: str,
-    acme_bin_dir: str,
+    acme_bin_path: str,
+    acme_home_path: str,
     debug: bool,
 ):
     """
@@ -47,62 +69,102 @@ def setup_ssl_certs(
 
     DOMAIN is the list of domains to acquire ssl certificates.
     """
-    click.echo("setting up ssl certs...")
     if debug:
         os.environ["DEBUG"] = "1"
+    logger = init_logging("setting up ssl certs...", env.is_debugging())
+    logger.info("preparing")
+
+    if validators.program_doesnt_exist(acme_bin_path):
+        acme_bin = "acme.sh"
+        if validators.program_doesnt_exist(acme_bin):
+            logger.error("couldn't find acme.sh executable.")
+            sys.exit(1)
+    logger.debug("acme.sh executable found.")
+
+    if not os.path.isdir(acme_home_path):
+        logger.error("acme.sh home path doesn't exist or unable to access.")
+        sys.exit(1)
+    logger.debug("acme.sh home path found.")
+
     success, message = acme.setup_ssl_certs(
         domains=domain,
         dns_provider=dns,
         ssl_root_dir=ssl_root_dir,
         reload_cmd=reload_cmd,
-        acme_bin_dir=acme_bin_dir,
+        acme_bin=acme_bin_path,
+        acme_home=acme_home_path,
+        logger=logger,
     )
     if not success:
-        click.UsageError(message).show()
-        click.echo("setting up ssl certs... failed.")
+        logger.error(f"failed. {message}")
         sys.exit(1)
 
-    click.echo("setting up ssl certs... done.")
+    logger.info("completed successfully.")
 
 
 @click.command()
 @click.argument("domain", nargs=-1, required=True)
 @click.option("--revoke/--no-revoke", default=True, help="Also revoke certificates.")
 @click.option(
-    "--acme-bin-dir",
+    "--ssl-root-dir",
     required=False,
-    default=os.path.expanduser("~/acme.sh"),
+    default="/etc/nginx/ssl",
+    show_default=True,
+    help="The directory to where the ssl certs copied.",
+)
+@click.option(
+    "--acme-bin-path",
+    required=False,
+    default=os.path.expanduser("~/.acme.sh/acme.sh"),
     show_default=True,
     help="The directory where acme.sh is installed.",
 )
 @click.option(
-    "--acme-data-dir",
+    "--acme-home-path",
     required=False,
     default=os.path.expanduser("~/.acme.sh"),
     show_default=True,
-    help="The directory where acme.sh stores its data.",
+    help="The directory where acme.sh keeps its configuration.",
 )
 @click.option("--debug/--no-debug", default=False, help="Enable debugging.")
 def remove_ssl_certs(
-    domain: tuple[str], revoke: bool, acme_bin_dir: str, acme_data_dir: str, debug: bool
+    domain: tuple[str],
+    revoke: bool,
+    ssl_root_dir: str,
+    acme_bin_path: str,
+    acme_home_path: str,
+    debug: bool,
 ):
     """
     Remove ssl certificates for the given domains.
 
     DOMAIN is the list of domains to remove the ssl certificates.
     """
-    click.echo("removing ssl certs...")
     if debug:
         os.environ["DEBUG"] = "1"
+    logger = init_logging("removing ssl certs...", env.is_debugging())
+    logger.info("preparing")
+
+    if validators.program_doesnt_exist(acme_bin_path):
+        acme_bin = "acme.sh"
+        if validators.program_doesnt_exist(acme_bin):
+            logger.error("couldn't find acme.sh executable.")
+            sys.exit(1)
+    logger.debug("acme.sh executable found.")
+
+    if not os.path.isdir(acme_home_path):
+        logger.error("acme.sh home path doesn't exist or unable to access.")
+        sys.exit(1)
+    logger.debug("acme.sh home path found.")
+
     success, message = acme.remove_ssl_certs(
-        domain, revoke, acme_bin_dir, acme_data_dir
+        domain, revoke, ssl_root_dir, acme_bin_path, acme_home_path, logger
     )
     if not success:
-        click.UsageError(message).show()
-        click.echo("removing ssl certs... failed.")
+        logger.error(f"failed. {message}")
         sys.exit(1)
 
-    click.echo("removing ssl certs... done.")
+    logger.info("completed successfully.")
 
 
 @click.command()
