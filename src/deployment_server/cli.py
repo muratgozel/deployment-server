@@ -36,7 +36,7 @@ def main():
 @click.option(
     "--reload-cmd",
     required=False,
-    default='"/usr/bin/systemctl reload nginx"',
+    default="/usr/bin/systemctl reload nginx",
     show_default=True,
     help="The command to execute after renewing ssl certs.",
 )
